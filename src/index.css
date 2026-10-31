@@ -1,0 +1,2013 @@
+@import url("https://fonts.googleapis.com/css2?family=Stack+Sans+Notch:wght@200..700&family=Stack+Sans+Text:wght@400;500;600;700&family=Hanken+Grotesk:wght@300;400;500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&family=Figtree:wght@400;500;600;700;800;900&family=Roboto+Flex:opsz,wght@8..144,400;8..144,500;8..144,700&display=swap");
+/* The font comparison is isolated from the deck's shared headline rules. */
+.font-preview-trigger {
+  position: fixed;
+  top: max(8px, env(safe-area-inset-top));
+  right: 16px;
+  z-index: 45;
+}
+.font-preview-dialog {
+  width: calc(100% - 32px);
+  max-width: 556px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  color: var(--color-text-primary);
+  background: hsl(var(--background));
+}
+.font-preview-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 360px;
+  padding: var(--retro-card-pad);
+  background: hsl(var(--card));
+  color: var(--color-text-primary);
+  border: 1px solid var(--retro-info-rule);
+}
+.font-preview-chapter {
+  font-size: 12px;
+  color: var(--retro-info-text);
+  margin-bottom: 24px;
+}
+.font-preview-dialog .font-preview-question {
+  font-weight: 400;
+  font-size: 38.4px;
+  line-height: 1.05;
+  letter-spacing: 0;
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+.font-preview-round .font-preview-question { font-family: "Nunito", sans-serif; }
+.font-preview-technical .font-preview-question { font-family: "JetBrains Mono", monospace; }
+.font-preview-serif .font-preview-question { font-family: "Instrument Serif", Georgia, serif; }
+.font-preview-support { margin-top: 16px; font-size: 16px; }
+.font-preview-sample-footer {
+  margin-top: auto;
+  padding-top: 28px;
+  font-size: 12px;
+  color: var(--retro-info-text);
+}
+@media (max-width: 480px) {
+  .font-preview-dialog { padding: 20px; }
+  .font-preview-dialog .font-preview-question { font-size: 32px; }
+}
+@media all and (print) {
+  .font-preview-trigger, .font-preview-dialog { display: none !important; }
+}
+/* Custom Kokoro font */
+@font-face {
+  font-family: "Kokoro";
+  src: url("/fonts/kokoro-bolditalic-webfont.woff2") format("woff2");
+  font-weight: bold;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Self-host the question typeface so it renders reliably in preview/mobile WebViews. */
+@font-face {
+  font-family: "Stack Sans Notch Local";
+  src: url("/fonts/stack-sans-notch-500.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Kokoro";
+  src: url("/fonts/kokoro-bolditalic-webfont.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /**
+   * Retro Cards design system — new token palette
+   */
+  :root {
+    --retro-black: #201C1D;
+    --risiko-face-fill: #FFFFFF;
+    /* the scale's grey smileys: one shared size everywhere — the very 44px the
+       answer dot fills — so a dragged face and a scale face are the same thing */
+    --risiko-face-size: 44px;
+    /* The answer dot wears no ring any more: it is drawn in the very grey the
+       scale's smileys wear — outline, eyes and mouth alike — so the handle reads
+       as one of the faces rather than as a disc painted over them. */
+    /* the answer dot's own box: the same 44px the marker's React constant hands
+       the thumb, so the scale can work the gap under the rule out from the dot */
+    --risiko-marker-size: 44px;
+
+    /* The info box carries no fill any more: its sentence reads in the scale's
+
+       own grey and a hairline above it separates it from the button above. */
+    --retro-info-text: #6E7078;
+    /* the writing fields' own fill: every text area sits on this grey, whatever
+       colour its label bar wears */
+    --retro-textarea-bg: #E4E6E8;
+    --retro-info-rule: #C9CBD1;
+    /* the one breath the info note keeps under its hairline (user: "gap top
+       border info text to CTA same as info text top padding", "info text top
+       padding only 8px") — the button above stands no breath of its own over
+       the hairline, so the note reads as one block hung under the button
+       (user: "Notizen öffnen move closer to top border of info text (same value
+       as top padding)") */
+    --retro-info-gap: 8px;
+    /* the "i" inside the ℹ mark reads darker than its ring, and is drawn with a
+       heavier pen, so the letter stays legible at 16px (user: "i in info I
+       darker if thicker") */
+    --retro-info-ink: #3F4147;
+    /* the card's own padding, as a token: the note keeps this much air under
+       itself, and the card's edges stand this clear of its content */
+    --retro-card-pad: 28px;
+    --intimacy-accent: #FF6BEF;
+
+    /* The scale's columns are drawn, not filled: a solid guide runs down each
+       smiley's own column (--risiko-line) and a shade lighter solid divider
+       stands between every pair of neighbouring columns (--risiko-column-line). */
+    --risiko-line: #80828A;
+    --risiko-column-line: #C9CBD1;
+    --risiko-caption: #9B9BA3;
+    /* the scale's own grey: the column names and the printed intro sentence share
+       it; the smileys wear the columns' paler grey (FACE_GREY in RisikoSlide.tsx) */
+    --risiko-guide: #6E7078;
+    --risiko-label-bg: #FFFFFF;
+    /* Workload partners wear the Health Check's own green family: the card's deep
+       green and its olive lead, and every further partner takes a neighbouring
+       green, dark enough to read as text on white (a test reads these). No two may
+       share one. */
+    --workload-partner-0: #0B7A35;
+    --workload-partner-1: #4E7A0F;
+    --workload-partner-2: #054C45;
+    --workload-partner-3: #24800D;
+    --workload-partner-4: #166D5C;
+    --workload-partner-5: #3F6B1F;
+    --workload-partner-6: #0F5132;
+    --workload-partner-7: #6E5E00;
+    --retro-card-bg: #F0EFEE;
+    /* rgb triplet so tailwind opacity modifiers work */
+    --retro-white-rgb: 238 238 238; /* light on dark app shell */
+    --retro-white: rgb(var(--retro-white-rgb));
+
+    --retro-post-it: #E4E6E8;
+    --retro-accent: #9D9CFF;
+    --retro-accent-on: #201C1D;
+
+    /* Additional palette tokens */
+    --color-surface-primary: #F0EFEE;
+    --color-surface-lime: #86AF25;
+    --color-surface-coral: #FF5E00;
+    --color-surface-lavender: #9D9CFF;
+    --color-surface-turquoise: #5074EF;
+    --color-text-primary: #201C1D;
+    --color-text-secondary: #6A737C;
+    --color-border-default: #C8CCD0;
+    --color-cta: #201C1D;
+    --color-cta-text: #FFFFFF;
+
+
+    /* Keep existing colors for compatibility */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    height: 100%;
+    height: calc(var(--vh, 1vh) * 100);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    height: 100%;
+    height: calc(var(--vh, 1vh) * 100);
+    margin: 0;
+    padding: 0;
+    background: var(--retro-black);
+    color: var(--retro-white);
+    font-family: "Figtree", "Hanken Grotesk", Arial, sans-serif;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none;
+    /* Support for iOS safe areas */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+      env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  /* iOS Safari: Prevent auto-scroll when focusing inputs/textareas */
+  @supports (-webkit-touch-callout: none) {
+    textarea:focus {
+      animation: ios-prevent-scroll 0.01s;
+    }
+  }
+
+  @keyframes ios-prevent-scroll {
+    0% { opacity: 0.99; }
+    100% { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+      font-size: 32px;
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+      /* The headline settles on its own size, not the parent's — the notes header
+         carries --notes-head-size, so the reveal lands exactly on that size. */
+      font-size: var(--notes-head-size, 16px);
+    }
+  }
+
+  @keyframes fadeInUp {
+    0% {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  #root {
+    height: 100%;
+    height: calc(var(--vh, 1vh) * 100);
+    width: 100%;
+  }
+}
+
+/* Retro Cards specific styles */
+/* ---- Unified type scale ----
+   Display  : Stack Sans Notch 400 / 38.4px  (.retro-title, .retro-heading)
+   Body     : Figtree 500 / 16px             (.retro-label, .retro-body, .retro-body-copy, button)
+   Small    : Figtree 500 / 12px             (.retro-small)                                     */
+
+.retro-title,
+.retro-heading {
+  font-family: "Stack Sans Notch", "Stack Sans Text", "Figtree", Arial, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-feature-settings: "ss02";
+  font-size: 38.4px;
+  /* The deck's questions and headlines breathe like its other display text (the
+     notes header 1.15, the statement 1.25) instead of standing shoulder to
+     shoulder: one value, on screen and on paper alike. */
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.retro-title {
+  color: var(--retro-body-bg, var(--retro-white));
+}
+
+.retro-heading {
+  color: #201C1D;
+}
+
+/* The question at the top of notes mode: the big question's own face (it keeps
+   .retro-heading for that), one step under the card's headline — 20px is the
+   largest step up from the 16px it used to read. Both notes headers share it so
+   the size lives in one place. */
+.notes-question {
+  --notes-head-size: 20px;
+  font-size: var(--notes-head-size);
+  line-height: 1.15;
+  color: #201C1D;
+}
+
+/* Cards are dark surfaces — keep text light (238 238 238) on them. */
+.retro-card-container {
+  --retro-white-rgb: 238 238 238;
+  /* Nothing may ever be dragged or laid out past the card's own width: the card
+     scrolls sideways rather than growing, so clip the sideways direction. */
+  overflow-x: hidden;
+}
+
+.risiko-card { overflow: hidden; }
+/* The scale keeps the same breathing room above and below as the card's own padding. */
+.risiko-page {
+  min-width: 0;
+  max-width: 100%;
+  --risiko-scale-pad: 28px; /* the card's own padding */
+  /* the card's own surface: a name's plate keeps this colour, so the word always
+     stands on clean paper (paper repaints it) */
+  --risiko-surface: #FFFFFF;
+  /* what the scale's own field — and the plates the faces and column names stand
+     on — are painted with: the card's surface on paper, a soft grey panel on
+     screen (below) */
+  --risiko-field-bg: var(--risiko-surface);
+  /* The slider row is a full head taller than its marker, so the handle floats
+     free of the smileys above and the buttons below, centred on its rule. */
+  --risiko-track-h: 56px;
+  /* How tall the grey scale fields stand on screen. Both scales read on this one
+     grid: the statement fields stop growing here, and the work-split lane is
+     exactly this tall plus the strip its names live in — so a card with one
+     work-split field shows fields as high as a card with two statements. */
+  --risiko-field-h: 220px;
+  /* the strip the work-split card's area keeps above the lane, for a partner name
+     that wraps to a second line and grows upwards past the lane's own top edge */
+  --risiko-work-headroom: 24px;
+  /* How far the circle's centre stops short of each scale end: the handle's own
+     radius, mirroring scaleEndInset(MARKER_SIZE) in RisikoSlide.tsx, so the outer
+     smileys and the names under them are placed with the same maths. */
+  --risiko-scale-inset: 16px;
+  /* The space a statement's last line keeps above the scale. The smileys centre
+     themselves on it, so it has to stay one number the face row can read. */
+  --risiko-statement-gap: 12px;
+}
+.intimacy-rating {
+  display: flex;
+  gap: 8px;
+  height: 44px;
+  flex-shrink: 0;
+  color: var(--retro-black);
+}
+.intimacy-rating .intimacy-star {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 0;
+  color: inherit;
+  background: transparent;
+}
+.intimacy-rating .intimacy-star svg { width: 44px; height: 44px; }
+/* A chosen heart wears the card's own pink, filled and outlined; an empty one
+   keeps only its ink outline. */
+.intimacy-star[data-filled="true"] svg {
+  fill: var(--intimacy-accent);
+  stroke: var(--intimacy-accent);
+}
+/* Hovering a heart previews that pink without the grey tile the ghost button
+   would otherwise paint behind it. */
+.intimacy-rating .intimacy-star:hover {
+  color: var(--intimacy-accent);
+  background: transparent;
+}
+.intimacy-rating .intimacy-star:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  box-shadow: none;
+}
+/* The sentence naming what the hearts rate: plain body text standing above
+   them, a step smaller on a phone. */
+.intimacy-question {
+  font-size: 16px;
+  line-height: 22px;
+  margin: 0;
+  color: var(--retro-black);
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+@media (max-width: 767px) {
+  .intimacy-question { font-size: 14px; line-height: 20px; }
+}
+/* Flex children must shrink to the actual content box, including when the
+   statement area has a vertical scrollbar or a long helper sentence. */
+.risiko-page :is(.risiko-scale-area, .risiko-body, .risiko-block, .risiko-footer),
+.health-check-page,
+.health-check-page > div {
+  min-width: 0;
+  max-width: 100%;
+}
+.health-check-page .retro-heading {
+  overflow-wrap: anywhere;
+}
+/* The first two Health Check cards draw their own track: five solid grey lines
+   across the face column — the line under every smiley's own field, so the track
+   starts below the first face and closes below the last one. Each starts at the
+   column's own left edge and stops short of the resting Memoji's spot; the faces
+   draw on top of them. */
+.health-check-guides {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.health-check-guide {
+  position: absolute;
+  left: 0;
+  width: max(0px, calc(min(var(--health-guide-end), calc(100% - 56px)) * 0.75 - 16px));
+  border-top: 1px solid var(--risiko-column-line);
+}
+.health-check-page .health-check-face,
+.health-check-page .health-check-face svg {
+  width: var(--health-face-size);
+  height: var(--health-face-size);
+}
+/* A statement reads in the same voice as the deck's big question — the display
+   face comes from the shared question rule above — but a step below its size:
+   85% of the question's 38.4px, so the sentence yields the stage to the scale.
+   Only a phone's card is narrower still: there the chapter's longest statement
+   would push the smileys, the scale and the notes past the card's lower edge —
+   so a phone steps down to 23.8px, the largest size at which every statement
+   still closes above the scale and the notes with room to spare. */
+.risiko-statement {
+  font-size: 32.6px;
+  /* a little more breath between the statement's lines than the question reads */
+  line-height: 1.3;
+  margin-bottom: var(--risiko-scale-pad);
+  color: var(--retro-black);
+  /* The statement keeps every word whole: it breaks only between words, and a
+     word takes a hard break only when it alone does not fit the line. (The
+     deck's big question still hyphenates — .question-word keeps hyphens: auto.) */
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+}
+@media (max-width: 767px) {
+  .risiko-statement { font-size: 23.8px; }
+  /* The work-split card's headline is a question, not a statement, so it keeps the
+     size every other question on the deck reads — even on a phone. */
+  .risiko-allocation-statement { font-size: 38.4px; }
+}
+/* A phone's card cannot hold the work-split question at the question's own size,
+   the whole sentence of examples and the split bar all at once — the bar would be
+   squeezed clean out of the card. So on a phone the work-split card keeps just the
+   question and the bar: the examples and the scale's own note line are left out
+   there, and the question carries the card's usual gap down to the lane. */
+@media (max-width: 767px) {
+  .risiko-allocation-page .risiko-allocation-examples,
+  .risiko-allocation-page .risiko-helper { display: none; }
+  /* The smaller headline stays on a phone, so it — not the dropped examples —
+     carries the card's gap down to the split bar. */
+  .risiko-allocation-page .risiko-allocation-statement { margin-bottom: 6px; }
+  .risiko-allocation-page .risiko-allocation-subheading {
+    font-size: 14px;
+    margin-bottom: var(--risiko-scale-pad);
+  }
+}
+/* The work-split card reads the question together with the fixed sentence of
+   what counts as Beziehungsarbeit, set straight under it as small body text in
+   one column. The question keeps only a small gap to the sentence; the sentence
+   carries the card's usual gap down to the work-split lane, so the fields still
+   start where the statement cards' do. */
+.risiko-allocation-statement {
+  margin-bottom: 6px;
+  /* This headline is a question, so it may hyphenate like the deck's other
+     questions: "Beziehungsarbeit" is the longest word in the deck and at the
+     question's own size it is wider than a phone card's text column. It breaks
+     at its own soft hyphen ("Beziehungs-" / "arbeit") rather than being cut
+     open mid-word, so no arbitrary break is offered here. */
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+/* The question's second half rides under the first as plain body text — the
+   deck's reading voice, not the question's display face — and the fixed
+   sentence of examples below it reads at that very same size. */
+.risiko-allocation-subheading {
+  font-size: 14px;
+  line-height: 20px;
+  margin: 0 0 10px;
+  color: var(--retro-black);
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+/* The sentence of examples under the work-split question reads as the deck's small
+   grey info text — the same colour and the same size — but it carries no hairline
+   above it, so it stays a plain line under the question instead of a second info box. */
+.risiko-allocation-examples {
+  /* the grey example sentence keeps its own breath under the card's headline */
+  margin: 16px 0 var(--risiko-scale-pad);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--retro-info-text);
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+/* The chapter the Mood Test opens with: its big question reads in the
+   statement's own voice but without the quotes — a title, not a statement. The
+   question keeps only a small gap to the intro sentence; the sentence carries
+   the card's usual gap down to the first statement, so the fields still start
+   where the other cards' do. */
+.risiko-chapter-info {
+  margin: 0 0 var(--risiko-scale-pad);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--risiko-guide);
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+@media (min-width: 1024px) { .risiko-chapter-info { font-size: 16px; } }
+/* The chapter's smiley is one of the five scale faces, kept at the size the
+   scale itself draws them, so the average reads in the scale's own language. It
+   rides inside the intro sentence: the breath sits before it, so the sentence's
+   own full stop can close directly behind the face instead of floating apart. */
+.risiko-chapter-mood { display: inline-flex; vertical-align: -4px; margin: 0 0 0 5px; }
+/* The chapter's info box rides straight under the scale, inside the scale's own
+   block, so it is centred and shifted together with the rule above it. Its gap
+   to the scale reads the card's own padding, so the box breathes as wide as the
+   card's edge. */
+.risiko-scale-note { margin-top: var(--risiko-scale-pad); }
+
+
+.risiko-chapter-mood .risiko-face svg { width: var(--risiko-face-size); height: var(--risiko-face-size); }
+
+/* The scale's grey smileys: the box and the drawing inside it follow
+   --risiko-face-size — one shared 44px everywhere, the very size the answer
+   dot fills, so a dragged face and a scale face are the same size. */
+.risiko-face,
+.risiko-face svg { width: var(--risiko-face-size); height: var(--risiko-face-size); }
+/* The grey smileys draw as an outline only — no fill, no plate of their own
+   (user: "grey full = grey outline no fill"), superseding the white halo they
+   wore earlier. The rule and the column guides therefore run straight behind
+   them; only the answer dot keeps a white plate, so the answer is the one face
+   that reads clear of the grid. */
+.risiko-face { border-radius: 50%; background: var(--risiko-face-fill); position: relative; z-index: 30; }
+
+/* The printed copy is a fixed A4 layout, not a device, but the smileys read at the
+   same shared 44px everywhere — the token is set on its container, which the faces
+   inside inherit. */
+.print-only { --risiko-face-size: 44px; }
+/* The printed cards are not inside .print-only, so the sheet carries its own copy
+   of the token: the smileys on paper match the dot's 44px too. */
+.print-slide-page { --risiko-face-size: 44px; }
+
+
+/* The names take the strip at the lane's foot — a quiet band 26px tall, so the
+   fields stop short of the split labels that follow the lane and nothing printed
+   on the bar crowds them.
+   On screen the lane stands as tall as the statement scales' fields plus that strip, so
+   the work split is read on a grid of exactly the same height as every other card. In
+   print it stretches over the card instead, the way the printed statement fields do.
+   Size containment lets everything inside centre itself on the lane's own height with
+   cqh, so the bar, the dots and the names follow the fields wherever they end. */
+.workload-lane {
+  container-type: size;
+  --risiko-name-strip: 26px;
+  height: calc(var(--risiko-field-h) + var(--risiko-name-strip));
+}
+/* The bar with the coloured shares runs through the fields' exact middle, the way
+   the statement scales' rule sits dead centre in theirs. */
+.workload-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc((100cqh - var(--risiko-name-strip)) / 2 - 1.5px);
+  height: 3px;
+  display: flex;
+}
+
+
+.workload-segment { height: 100%; background: var(--workload-color); }
+.workload-color-0 { --workload-color: var(--workload-partner-0); }
+.workload-color-1 { --workload-color: var(--workload-partner-1); }
+.workload-color-2 { --workload-color: var(--workload-partner-2); }
+.workload-color-3 { --workload-color: var(--workload-partner-3); }
+.workload-color-4 { --workload-color: var(--workload-partner-4); }
+.workload-color-5 { --workload-color: var(--workload-partner-5); }
+.workload-color-6 { --workload-color: var(--workload-partner-6); }
+.workload-color-7 { --workload-color: var(--workload-partner-7); }
+/* The lane wears no marker of its own any more: the split reads from the rule, the
+   names standing above it and the shares standing below, so nothing is drawn where
+   an avatar circle used to sit. */
+/* The shares ride in their own row at the lane's foot. The row is a line rather than
+   a box: every number stands on it and grows downwards, so a taller number never
+   crowds the line it belongs to. It starts straight under the boundary lines' own
+   foot, and it never catches a pointer — the bar is what a press grabs. */
+.workload-shares {
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* straight under the foot of the boundary lines */
+  top: calc(100cqh - var(--risiko-name-strip) + 2px);
+  height: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+/* The share keeps its partner's plain colour and never wraps: "100%" is already
+   the widest it ever has to be. */
+.workload-split {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: max-content;
+}
+.workload-split-figures { display: flex; align-items: baseline; gap: 6px; }
+.workload-split-sep { color: var(--retro-black); font-weight: 700; font-size: 14px; }
+.workload-percentage {
+  position: relative;
+  background: var(--risiko-label-bg);
+  color: var(--workload-color);
+  font-size: 16px;
+  line-height: 17px;
+  font-weight: 700;
+  padding: 0 3px;
+  white-space: nowrap;
+  /* The number always takes its own width, however little room is left beside it. */
+  width: max-content;
+  max-width: 60px;
+}
+/* The names ride in their own row straight above the rule, standing on it and growing
+   upwards, so the row never has to be measured to make room for a longer name — the
+   very way the shares stand under it. Like that row it never catches a pointer. */
+.workload-labels {
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* the rule's head, plus 4px of air */
+  bottom: calc((100cqh + var(--risiko-name-strip)) / 2 + 4px);
+  height: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+/* A name wears the very styling its share figure wears — the number's own size, weight
+   and plate, in its partner's colour — so the two rows read as one pair. A name wider
+   than the row's fixed width breaks at its own words onto a second line rather than
+   reaching over a neighbour's run. */
+.workload-label {
+  position: absolute;
+  bottom: 0;
+  transform: translateX(-50%);
+  background: var(--risiko-label-bg);
+  color: var(--workload-color);
+  /* the share figure's own size, so name and number read alike */
+  font-size: 16px;
+  line-height: 17px;
+  font-weight: 700;
+  padding: 0 3px;
+  text-align: center;
+  /* A name always claims its own width up to this line — how little room happens to
+     be left beside it must never squeeze it into yet another line. */
+  width: max-content;
+  max-width: 96px;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+/* The five column labels — "Trifft noch nicht zu" … "Trifft immer zu" — stand in
+   their own row under the field, so every label sits under the column it names.
+   One label per field, centred on it, and each one takes its own column's width so
+   long labels wrap instead of crowding their neighbours. */
+/* On screen the field stands at its own height: the scale keeps a comfortable
+   margin from the names at its foot, and the whole scale can be centred on the
+   card (below). The printed sheet is sized to the page instead, so print is left
+   to stretch the field over the whole card. */
+@media screen {
+  /* The field stands at exactly its own height: as a flex item with that basis it
+     is neither squeezed by the row around it nor allowed to eat the space the
+     scale is centred in. The printed sheet is sized to the page instead, so print
+     is left to stretch the field over the whole card. */
+  /* The field stands at its own height as a floor: it grows to hold the column
+     names at its foot, so the grey panel behind the scale wraps the whole control
+     — smileys, rule and names — instead of stopping under the rule. It still
+     shrinks, and still scrolls, when a statement is too tall for the card. */
+  .risiko-scale-field { flex: 0 0 var(--risiko-field-h); }
+  /* The column names no longer ride up under the circle: they stand above the
+     smileys (the stack puts that row first), so the field keeps its height and the
+     rule stays centred in the room under the faces. */
+  /* The interactive slider sits on the card's mid-line: the scale stops growing
+     to fill the card and the free space around it is split evenly, so it lands in
+     the middle of the room between the statement above and the buttons below.
+     That room is not itself centred on the card — the buttons are taller than the
+     statement — so the component measures the last few pixels and hands them to
+     the shift below, which it never lets run past the text or the buttons. */
+  .risiko-scale-core { flex: 0 1 auto; margin-block: auto; }
+  .screen-only :is(.risiko-scale-core) { transform: translateY(var(--risiko-centre-shift, 0px)); }
+  /* The work-split card's block fills its area exactly, so shifting the block would
+     slide it out of the area's own clip and slice the names' tops: the area shifts
+     instead, carrying its clip edge along with the block inside it. */
+  .risiko-scale-area--work { transform: translateY(var(--risiko-centre-shift, 0px)); }
+  /* The lane's own box starts at the rule's headroom, but a partner whose name
+     wraps to two lines grows that name upwards, past the lane's top edge. The
+     area is the lane's clip now, so it keeps a strip of its own above the lane —
+     no more than the card's padding — for exactly that overhang. */
+  .risiko-scale-area--work { padding-top: var(--risiko-work-headroom); }
+  /* Nothing floats in an empty band: the card's content stands as one tight stack
+     that rides the card's middle, so the scale never keeps more room between
+     itself and the text above or the buttons below than the card's own padding.
+     The area stops eating the card and takes its content's height instead — it
+     still shrinks, and still scrolls, when a statement grows too tall for the
+     card, so the deck's "fewer statements per card" signal keeps working. */
+  .risiko-page { justify-content: center; }
+  /* The area takes the card's whole height: the free room goes into the gaps
+     between the statement, the scale and the buttons, so nothing stands as an
+     empty band at the card's foot. */
+  .risiko-page .risiko-scale-area { flex: 1 1 auto; }
+  /* The names keep the card's own padding of air before the scale begins, so the
+     smileys stand well clear of the text above them (user: "much more gap between
+     grey smiley and text above"). */
+  .risiko-scale-stack .risiko-scale-captions { margin-bottom: 28px; }
+  /* The scale carries no panel any more: smileys, rule and names stand straight
+     on the card's own surface, so the field colour falls back to that surface and
+     nothing is painted behind the control. */
+}
+/* The field centres the rule in its own box — the rule is its only flow child —
+   and the smiley row hangs above it at --risiko-face-rise (see .risiko-face-header),
+   so the slider and the smileys are centred together however tall the field
+   stands: the capped field on screen, the shorter one on a small phone, and the one
+   the printed sheet stretches over the whole card. */
+.risiko-scale-field {
+  padding-top: 0;
+}
+/* The smiley row shares the rule's centre line: its own centre sits on the field's
+   middle — where the rule centres — and the row is painted over the circle, so a
+   face never disappears behind the dot (user: "grey smileies ... ON TOP SLIDER
+   DOT"). Its white plate (.risiko-face) keeps each face readable. */
+.risiko-face-header {
+  top: calc(50% - var(--risiko-face-rise));
+  height: var(--risiko-face-size);
+  transform: translateY(-50%);
+  z-index: 30;
+}
+/* The field and the names under it form one stack, so the scale's own parts keep
+   their order on the screen and on the printed sheet alike. The face row's own
+   position lives here too, so anything placed against the stack reads it from its
+   own parent. */
+.risiko-scale-stack {
+  /* How far the smiley row's own centre stands above the rule's centre: the faces
+     ride the rule itself, so the step is 0 — the token stays as the one source of
+     truth the field's floor, the row's placement and the names' lift all read. */
+  --risiko-face-rise: 0px;
+  /* On screen the field stands at the taller of its own basis and the floor the
+     card hands it (see --risiko-field-min), and it centres the rule in the room
+     that is left under the smileys — so half of that room is the rule's own drop
+     from the field's foot, and the stack can say where the rule really sits. */
+  --risiko-field-live: max(var(--risiko-field-h), var(--risiko-field-min, 0px));
+  /* The column names rise to just under the circle: the room below the rule, less
+     the circle's own radius and a hair of air, is how far the row can travel up.
+     A card whose field is too short for that (Intimacy's) lifts by nothing and
+     keeps its names where they stand. */
+  --risiko-caption-lift: max(0px, calc((var(--risiko-field-live) - var(--risiko-face-rise) - var(--risiko-face-size) - 4px) / 2 - var(--risiko-marker-size) / 2 - 4px));
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+.risiko-scale-captions {
+  /* stands above whatever the scale draws behind it */
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0 4px;
+  padding-bottom: 4px;
+}
+/* The statement scale's names sit under the smiley they belong to, so the row's
+   columns are the stretches of the scale each face owns: the two outer ones reach
+   only their smiley's own centre — a name centred on the first or last smiley would
+   hang over the card's edge — while the three inside stand exactly on their face.
+   The work-split lane's split figures keep the evenly divided grid above. */
+.risiko-scale-stack .risiko-scale-captions {
+  /* The names open the scale: they take the row above the smileys instead of the
+     foot of the field, so each name reads first and its own face sits under it. */
+  order: -1;
+  margin-bottom: 6px;
+  gap: 0;
+  /* the row is what the names measure themselves against — every column is a
+     share of this row's own width, so the size that just fits two lines can be
+     written as a share of it (see .risiko-scale-stack .risiko-scale-caption) */
+  container-type: inline-size;
+  /* the five names stand in five equal columns — the very fifths the smileys, the
+     drawn lines and the circle's travel are laid out on, so every name sits in the
+     middle of the column it names (user: "graph columns make even wide") */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+/* Every name stands centred in its own equal column — the outer ones included: the
+   columns no longer narrow towards the card's edges, so nothing has to be pushed
+   against an edge to stay inside the card (user: "column headline text alignment
+   centered"). */
+/* The column names are as big as their own column can hold. Every name breaks at
+   its own words into exactly two lines (captionLines), so the largest size is the
+   one at which the longest line of every name still fits inside its column. Both
+   terms are read off the live card, size by size, until a line touched its
+   divider: the outer columns run from the card's own edge to the first divider
+   (100cqw/8 + 16.5px) and the binding line there, "Trifft noch", measures
+   4.5em + 7px; the three inside are a quarter of the travel (100cqw/4 - 11px)
+   and their binding line, "teilweise zu", measures 5.66em + 1.5px. That reads
+   14.4px on a tablet or desktop card, 10.1px on a phone and about 11px on paper —
+   always the very largest size that still needs only two lines. The names wear
+   the deck's own ink black, one step above the scale's greys. */
+/* The column names are as big as their own equal column can hold, two steps down:
+   every name breaks at its own words into exactly two lines (captionLines), so the
+   largest size is the one at which the longest line of every name — "teilweise zu",
+   5.66em + 1.5px — still fits inside a fifth of the row (100cqw/5) with its plate's
+   own 6px of breath. Two pixels come off that maximum (user: "text sie -2px"). */
+.risiko-scale-stack .risiko-scale-caption {
+  font-size: calc(min(calc((100cqw / 5 - 7.5px) / 5.66), 18px) - 2px);
+  /* every name reads the card's own ink, whatever column the answer rests in
+     (user: "column header text all black no matter of slider psoiron",
+     superseding the grey-until-selected rule) */
+  color: var(--retro-black);
+}
+/* The grey and size the work-split card's ratio legend falls back to: it names
+   no column, it only repeats each column's own split, so it stays a footnote. */
+.risiko-scale-caption {
+  font-family: "Figtree", "Hanken Grotesk", Arial, sans-serif;
+  font-weight: 500;
+  font-feature-settings: "ss01", "ss02", "cv11";
+  letter-spacing: 0.005em;
+  font-size: 11px;
+  line-height: 1.15;
+  color: var(--risiko-guide);
+  /* Plain block text, not a flex item: an anonymous flex item is never allowed to
+     shrink below its longest word, so on narrow cards "teilweise" would stick out of
+     its column and run into the neighbour's word. As a block the words wrap inside the
+     column (German hyphenation first, a hard break only if nothing else fits) and stay
+     centred on the field they name. */
+  display: block;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  min-width: 0;
+  /* every name keeps a plate of the card's own surface, so the word always stands
+     on clean paper; the plate bleeds into the 4px gap between the columns, so it
+     never touches a neighbour's letters */
+  padding-top: 4px;
+}
+/* The plate is only as wide as the word it carries, so the row keeps its even
+   columns and only the letters themselves sit on the card's own surface. */
+.risiko-caption-plate { background: var(--risiko-field-bg); padding-inline: 3px; }
+/* Each name stands in its own lines: the spans the component emits (first word /
+   middle words / last word) become real lines on every device, so the row never
+   mixes single-line and wrapped labels. */
+.risiko-caption-line { display: block; white-space: nowrap; }
+
+/* The sentence that explains a post-it's headline: the scale's own grey, no fill,
+   sitting straight under the coloured bar and above the writing area. It takes the
+   info rows' size — 16px on desktop, one step smaller on phones and tablets.
+   The colour needs both classes: the shared body-text rule further down would
+   otherwise paint it ink black. */
+.post-it-helper {
+  font-size: 16px;
+  line-height: 22px;
+}
+.post-it-helper.retro-body-copy {
+  color: var(--risiko-guide);
+}
+
+.risiko-block { container-type: inline-size; }
+
+/* Question text sits on a white plate shaped like the Post-it input label. */
+.risiko-page .risiko-label {
+  letter-spacing: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  /* the plate hugs the question text — no side padding */
+  padding: 4px 0;
+  /* never squeeze the plate shorter than its text when a row is tight */
+  flex-shrink: 0;
+  /* the question text stands on the card's own surface (card is white) */
+  background: var(--risiko-label-bg);
+}
+/* The helper keeps its full sentence at the default size: on narrow cards the
+   label wraps to a second line instead of being cut off with an ellipsis. */
+.risiko-helper {
+  height: auto;
+  max-width: 100%;
+  align-items: stretch;
+}
+.risiko-helper > span:first-child {
+  /* the ℹ mark keeps no filled plate of its own — it rides the sentence's own
+     height instead of a 32px field (user: "info i icon remove padding") — and it
+     rides the sentence's first line, not the middle of a wrapped note (user:
+     "info i icon smaller and aligned with 1 line of text"): the glyph is 12px
+     against a 22px line, so it drops 5px from the row's own top. */
+  height: auto;
+  align-self: flex-start;
+  margin-top: 5px;
+}
+.risiko-helper > span:last-child {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-wrap: anywhere;
+  height: auto;
+  /* no 32px floor: the note hugs its own text, so its first line really does
+     start at the row's top and the mark can sit on that line */
+  /* no top padding: the row's own 8px is the whole breath under the hairline,
+     so it reads the same as the 8px the button keeps above it (user: "gap top
+     border info text to CTA same as info text top padding") */
+  padding-bottom: 4px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.25;
+}
+/* The Health Check helper (first two cards) keeps its full sentence too: on
+   narrow cards the label wraps to a second line instead of being cut off with
+   an ellipsis, while the plate still hugs its text. */
+.hc-helper {
+  height: auto;
+  max-width: 100%;
+  align-items: stretch;
+}
+.hc-helper > span:first-child {
+  /* the ℹ mark keeps no filled plate of its own — it rides the sentence's own
+     height instead of a 32px field (user: "info i icon remove padding") — and it
+     rides the sentence's first line, not the middle of a wrapped note (user:
+     "info i icon smaller and aligned with 1 line of text"): the glyph is 12px
+     against a 22px line, so it drops 5px from the row's own top. */
+  height: auto;
+  align-self: flex-start;
+  margin-top: 5px;
+}
+.hc-helper > span:last-child {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  height: auto;
+  /* no 32px floor: the note hugs its own text, so its first line really does
+     start at the row's top and the mark can sit on that line */
+  /* no top padding: the row's own 8px is the whole breath under the hairline,
+     so it reads the same as the 8px the button keeps above it (user: "gap top
+     border info text to CTA same as info text top padding") */
+  padding-bottom: 4px;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.25;
+}
+/* The thumb is as wide as a face so its travel ends land under the outer face centres. */
+.risiko-thumb { display: flex; align-items: center; justify-content: center; }
+/* The press has to land on the circle itself: the slider library only sees a
+   circle press when the pressed element *is* the circle, otherwise it treats it
+   as a click on the empty bar. The avatar and the name are decoration, so they
+   let the pointer pass through to the circle behind them. */
+.risiko-thumb > * { pointer-events: none; }
+/* The slider row's height is shared with the footer's margin maths below. */
+.risiko-track { height: var(--risiko-track-h); }
+/* The rule is the scale's own ground line: it paints over the column grid and
+   stays under the smiley row (z-30), while the answer circle rides on top of
+   everything (z-40, user: "range slider z-index to top") — its own white plate
+   covers a smiley as it passes, so the answer is never hidden. */
+.risiko-rule { z-index: 1; }
+/* The button block sits below the scale and carries the card colour, so nothing
+   shows through behind it. */
+.risiko-footer {
+  background: var(--risiko-label-bg);
+  /* the buttons stand no further under the scale than the card's own padding */
+  margin-top: var(--risiko-scale-pad);
+  /* the footer's own bottom edge lands on the card's very bottom edge; the
+     sentence inside keeps the card's padding as its margin-bottom, so the air
+     under it reads the card's own padding too (user: "card padding is also
+     applies as margin-bottom of info text") */
+  margin-bottom: calc(-1 * var(--risiko-scale-pad));
+}
+/* the risiko helper sentence keeps a full card padding of air under itself */
+.risiko-footer .retro-info-row {
+  margin-bottom: var(--retro-card-pad);
+}
+/* The info sentence keeps the card's own padding at its left and right, and the
+   hairline above it spans only that content width — the card's own edges stay
+   bare (user: "info text left and right padding same as from card", "border-top
+   only container not fullwidth"). Only its foot reaches the card's own edge. */
+/* The sentence needs no indent of its own: the mark stands in the icon tile's
+   32px column and the sentence keeps the field's own 12px padding, so the note's
+   words start at the very same x as the button's label above them (user: "info I
+   text move to same x position as Notizen öffnen text"). */
+.risiko-block .risiko-statement { margin-bottom: var(--risiko-statement-gap); }
+/* A solid line that stretches the stack's whole height: from the smileys' own top
+   edge, behind each face (whose plate keeps the face readable), down past the last
+   column name. Both families use it — the smileys' own guides and the lighter
+   dividers between them — so every line on the scale spans smileys, rule and names. */
+.risiko-guide-full { top: 0; bottom: 0; }
+/* Each smiley's column carries its own solid guide straight down it, centred on
+   the face. The face's plate and every name's plate keep the line from reading
+   through either of them, so it looks threaded behind the scale, not over it. */
+.risiko-column-guide {
+  width: 0;
+  border-left: 1px solid var(--risiko-column-line);
+  transform: translateX(-0.5px);
+}
+/* The divider between two neighbouring columns, a shade behind the guides, so the
+   range still reads as five identical fields with the scale's own edges left open. */
+.risiko-column-edge {
+  width: 0;
+  /* the lines wear the very colour the column names are printed in (user: "grey
+     lines as text color"), so the grid and its labels read as one ink */
+  border-left: 1px solid var(--risiko-column-line);
+}
+/* The work-split's boundary line: solid ink, standing from the lane's top edge
+   down to the names' strip. Like every other vertical line on the scales it is a
+   single pixel wide (user: "Vertical lines 1px stroke width"), and its left lands
+   on the centre of the gap between the two circles that meet there. */
+.workload-boundary {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--retro-black);
+  transform: translateX(-0.5px);
+}
+/* The circle rides the rule; the slider stays underneath it. */
+.risiko-marker { pointer-events: none; }
+.risiko-expression-point {
+  position: relative;
+  display: block;
+  width: var(--risiko-marker-size);
+  height: var(--risiko-marker-size);
+  min-width: var(--risiko-marker-size);
+  min-height: var(--risiko-marker-size);
+  max-width: var(--risiko-marker-size);
+  max-height: var(--risiko-marker-size);
+  aspect-ratio: 1;
+
+  border-radius: 50%;
+  /* The dot's smiley is painted straight onto the card: nothing white sits behind
+     it, so no pale ring cuts the rule it rides (user: "dot smiley no white outline"),
+     and its features wear the same ink as that rule instead of the smileys' grey
+     ("color back instead of grey"). */
+  background: none;
+  /* The thumb is as narrow as a scale face, so the marker must not be squeezed
+     into an oval — it keeps its circle and spills evenly over the thumb's edges */
+  flex-shrink: 0;
+}
+/* The rule stops exactly where the face's own outline starts: a plate the size of
+   the drawn circle including its stroke (the zoomed window paints the circle
+   across the whole 44px dot, so the plate is that dot plus the rule's own 3px
+   pen ≈ 46px) so no pale ring shows around the smiley — the line simply meets its
+   edge. The plate carries the face's own white fill (`--risiko-face-fill`), the
+   same white the Memojis wear, so the smiley reads white-filled on screen and on
+   paper alike. */
+.risiko-expression-point::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--risiko-marker-size) * 1.05);
+  height: calc(var(--risiko-marker-size) * 1.05);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--risiko-face-fill);
+  /* no ring beyond the face's own plate (user: "REMOVE 2PX WEI0EN RAND"): the
+     white stops exactly where the drawn circle's outline stands */
+}
+
+/* The draggable dot never shows a focus outline. */
+.risiko-thumb:focus,
+.risiko-thumb:focus-visible {
+  outline: none;
+}
+.risiko-plain-dot {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 160ms ease;
+}
+.risiko-drag-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  /* the circle is drawn from the first look, not only after a drag (user:
+     "default slier circle same styling as after dra") — the features inside it
+     are what wait for the first touch */
+  transform: scale(1);
+  transition: transform 180ms ease;
+}
+/* Only the features morph; the shared 32px disc never changes size. */
+.is-dragging .risiko-drag-face { transform: scale(1); }
+.is-dragging .risiko-plain-dot { transform: scale(0); }
+/* Once dragged, the face stays on the scale: the plain dot marks the untouched initial state. */
+.is-shown .risiko-drag-face { transform: scale(1); }
+.is-shown .risiko-plain-dot { transform: scale(0); }
+/* One brief hop of the whole untouched marker — disc and arrow together —
+   along the line: never up or down, so the marker stays on its rule.
+   The disc never stretches or moves its saved position. Play only after
+   entering view. The arrow lives inside the disc, so it rides along. */
+@keyframes risiko-navigation-hint {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-10px); }
+  45% { transform: translateX(0); }
+  68% { transform: translateX(10px); }
+  86% { transform: translateX(-3px); }
+}
+.risiko-expression-point.has-navigation-hint:not(.is-shown):not(.is-dragging) {
+  animation: risiko-navigation-hint 1100ms ease-in-out 150ms 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .risiko-drag-face, .risiko-plain-dot { transition: none; }
+  .risiko-expression-point { animation: none !important; }
+}
+@media print {
+  .risiko-expression-point { animation: none !important; }
+}
+.risiko-memoji {
+  background: var(--risiko-face-fill);
+  box-shadow: 0 0 0 1.5px var(--retro-black);
+}
+
+
+.retro-label,
+.retro-body,
+.retro-body-copy,
+button {
+  font-family: "Figtree", "Hanken Grotesk", Arial, sans-serif;
+  font-weight: 500;
+  font-feature-settings: "ss01", "ss02", "cv11";
+  font-size: 16px;
+  line-height: 22px;
+  letter-spacing: 0.005em;
+}
+
+.retro-label {
+  color: var(--retro-body-bg, var(--retro-white));
+}
+
+.retro-body,
+.retro-body-copy {
+  color: #201C1D;
+}
+
+.retro-small {
+  font-family: "Figtree", "Hanken Grotesk", Arial, sans-serif;
+  font-weight: 500;
+  font-feature-settings: "ss01", "ss02", "cv11";
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.005em;
+  color: #201C1D;
+}
+
+/* Statement labels on the Risikofaktoren scale rows — smaller than the
+   regular body copy so the larger smiley scale stays the focus. */
+.retro-body-copy-sm {
+  font-size: 14px;
+  line-height: 18px;
+}
+
+/* The info box (ℹ + helper sentence) is no longer a filled plate: it reads as
+   plain grey text with a grey hairline drawn above it, so the sentence sits
+   under the button as a footnote instead of a second tile. The row keeps its
+   own height so the border and the gap above the text never squeeze the label. */
+.retro-info-row {
+  height: auto;
+  /* the hairline runs the card's whole content width, so a short sentence does
+      not leave the line stopping half way across the card */
+  width: 100%;
+  border-top: 1px solid var(--retro-info-rule);
+  /* the air between the hairline and the sentence is the note's own breath —
+     the same 8px the button above keeps over the hairline and the ℹ mark keeps
+     over its sentence (user: "info text top padding only 8px", "gap top border
+     info text to CTA same as info text top padding") */
+  padding-top: var(--retro-info-gap);
+}
+
+/* The "i" inside the ℹ mark reads darker than its ring so the letter holds up
+   beside the sentence (user: "i in info I darker if thicker"), but its pen goes
+   no heavier than the scale smileys' own: those draw 0.9 units in a 24-unit box
+   at 44px, i.e. 1.65px on screen. The mark draws at 12px (user: "info i icon
+   smaller and aligned with 1 line of text"), so the letter takes 3.2 units —
+   1.60px on screen, still heavier than the ring's own 1.5px and still under the
+   smileys' 1.65px (user: "stroke width max like grey smiley"). The ring keeps
+   the footnote's lighter pen. */
+.retro-info-mark path {
+  stroke: var(--retro-info-ink);
+  stroke-width: 3.2;
+}
+
+
+/* Info rows (the ℹ helper sentences) read one size smaller on phones and
+
+   tablets: the same sentence then fits in fewer lines without squeezing the
+   scale or the notes row. Desktop keeps the regular 16px body copy.
+   Placed after .retro-body-copy so it wins over the default size.
+   12px is the app's floor — no text anywhere is set smaller than that. */
+@media (max-width: 1023px) {
+  .retro-info-row,
+  .post-it-helper,
+  .risiko-allocation-examples {
+    font-size: 12px;
+    line-height: 16px;
+  }
+  /* the sentence's line is 16px here, so the 12px mark drops only 2px onto it */
+  .risiko-helper > span:first-child,
+  .hc-helper > span:first-child {
+    margin-top: 2px;
+  }
+}
+
+
+/* Hide in-card pills — pill is now rendered above the card */
+.retro-card-container .retro-pill { display: none !important; }
+
+/* Pill label container — themed swatch + white label */
+.retro-pill {
+  --pill-swatch: 32px;
+  --pill-dot: 10px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 8px 0 calc(var(--pill-swatch) + 6px);
+  background: #FFFFFF;
+  border: 0 !important;
+  border-radius: 0 !important;
+  overflow: hidden;
+}
+
+.retro-pill .retro-label {
+  color: #201C1D !important;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 22px;
+  letter-spacing: 0.005em;
+}
+.retro-pill::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--pill-swatch);
+  background: var(--retro-pill, var(--retro-post-it, #9D9CFF));
+}
+.retro-pill::after {
+  content: "";
+  position: absolute;
+  left: calc((var(--pill-swatch) - var(--pill-dot)) / 2);
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--pill-dot);
+  height: var(--pill-dot);
+
+  border-radius: 999px;
+  background: var(--retro-pill-dot, var(--retro-post-it-text, #201C1D));
+}
+
+
+/* Logo slide entrance animation */
+@keyframes logoSlideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-20%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.logo-slide-anim {
+  animation: logoSlideDown 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Occasional soft pink/orange chroma pulse on the logo title */
+.logo-glitch {
+  position: relative;
+  display: inline-block;
+}
+.logo-glitch::before,
+.logo-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: multiply;
+}
+.logo-glitch::before {
+  color: #FF47D1;
+  animation: logo-chroma-a 8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+.logo-glitch::after {
+  color: #FF5E00;
+  animation: logo-chroma-b 8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+@keyframes logo-chroma-a {
+  0%, 74% { opacity: 0; transform: translate(0, 0); }
+  80% { opacity: 0.85; transform: translate(-5px, -3px); }
+  86% { opacity: 0.5; transform: translate(-2px, -1px); }
+  93%, 100% { opacity: 0; transform: translate(0, 0); }
+}
+@keyframes logo-chroma-b {
+  0%, 74% { opacity: 0; transform: translate(0, 0); }
+  80% { opacity: 0.85; transform: translate(5px, 3px); }
+  86% { opacity: 0.5; transform: translate(2px, 1px); }
+  93%, 100% { opacity: 0; transform: translate(0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-glitch::before, .logo-glitch::after { animation: none; }
+}
+
+.retro-emoji-large {
+  font-size: 67px;
+  line-height: 1.2;
+}
+
+.retro-emoji-medium {
+  font-size: 48px;
+  line-height: 1.2;
+}
+
+/* Remove underlines from interactive elements */
+button:hover,
+button:focus,
+button:active,
+a:hover,
+a:focus,
+a:active {
+  text-decoration: none !important;
+}
+
+/* Ensure pointer cursor on all buttons */
+button {
+  cursor: pointer !important;
+}
+
+/* Focus state: never the browser's blue outline. Keyboard focus gets a thin
+   ink ring instead — currentColor keeps it visible both on the dark page
+   shell (white text) and on the light cards (ink text). */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Unified input styles for all form inputs */
+.retro-input {
+  outline: none;
+  resize: none;
+  font-family: "Figtree", "Hanken Grotesk", Arial, sans-serif;
+  font-weight: 500;
+  font-feature-settings: "ss01", "ss02", "cv11";
+  font-size: 16px;
+  line-height: 22px;
+  letter-spacing: 0.005em;
+}
+
+.retro-input-dark {
+  color: #ffffff;
+  caret-color: #ffffff;
+}
+
+.retro-input-dark::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+  opacity: 1;
+}
+
+.retro-input-light,
+.retro-input-dark-text {
+  color: #201C1D;
+  caret-color: #201C1D;
+}
+
+/* M3 Expressive body-large placeholder: softer weight, generous tracking */
+.retro-input-light::placeholder,
+.retro-input-dark-text::placeholder {
+  color: rgba(32, 28, 29, 0.55);
+  opacity: 1;
+  font-weight: 500;
+  letter-spacing: 0.005em;
+}
+
+/* M3 Expressive label-small on post-its: uppercase micro label */
+.bg-retro-post-it .retro-label,
+.retro-post-it-label {
+  font-family: "Figtree", "Hanken Grotesk", Arial, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 22px;
+  letter-spacing: 0.005em;
+  text-transform: none;
+  color: var(--retro-post-it-text, #201C1D);
+  opacity: 0.72;
+}
+
+
+/* Material 3 Expressive filled tonal look for post-its */
+.bg-retro-post-it {
+  border-radius: 28px;
+  box-shadow: none;
+  transition:
+    border-radius 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 250ms cubic-bezier(0.2, 0, 0, 1),
+    background-color 250ms cubic-bezier(0.2, 0, 0, 1),
+    transform 250ms cubic-bezier(0.2, 0, 0, 1);
+}
+textarea.bg-retro-post-it:hover,
+.bg-retro-post-it:hover {
+  border-radius: 32px;
+  box-shadow: none;
+}
+textarea.bg-retro-post-it:focus,
+.bg-retro-post-it:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Name input wrapper */
+.name-input-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+/* Setup emoji input: smaller, subtler outline */
+.setup-emoji-input {
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Print styles for archiving all slides */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: 100% !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #root {
+    height: auto !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+
+  #root > div {
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+  }
+
+  /* The slide stage centres and clips its content on screen; in print the pages
+     must flow from the top of the document instead of being centred in a
+     viewport-tall box (which pushes the first pages above the paper). */
+  .print-stage {
+    display: block !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding: 0 !important;
+  }
+
+  .bg-retro-black {
+    background: white !important;
+  }
+
+  .swiper {
+    display: none !important;
+  }
+
+  .swiper-wrapper {
+    display: none !important;
+  }
+
+  /* Print slides container - show in print.
+     Anchor it to the top of the sheet: the on-screen flow starts 16px down, and
+     that nudge pushed the first card off sheet 1, leaving a blank first page. */
+  .print-slides-container {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+  }
+
+  .print-slide-page {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    /* Fit inside the printable area with headroom: @page has 10mm margins and the
+       document still starts 16px down, so a full-height sheet overflowed and
+       pushed the first card onto a blank page. */
+    width: 190mm !important;
+    height: 272mm !important;
+    max-height: 272mm !important;
+    page-break-after: always !important;
+    page-break-inside: avoid !important;
+    break-after: page !important;
+    break-inside: avoid !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    position: relative !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+  }
+
+  .print-slide-page:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Last visible slide - no page break after */
+  .print-slide-page:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Prevent any trailing blank pages */
+  .swiper-wrapper {
+    height: auto !important;
+  }
+  
+  .swiper-wrapper::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Card styling for print */
+  .bg-retro-card-bg {
+    background: #F0EFEE !important;
+    box-shadow: none !important;
+  }
+
+  /* Text colors for print */
+  .text-retro-white {
+    color: #201C1D !important;
+  }
+
+  .text-retro-white\/80 {
+    color: #201C1D !important;
+  }
+
+  .retro-title,
+  .retro-label,
+  .retro-heading,
+  .retro-body {
+    color: #201C1D !important;
+  }
+
+  .border-retro-white {
+    border-color: #201C1D !important;
+  }
+
+  /* Hide navigation elements */
+  .cursor-pointer.z-20 {
+    display: none !important;
+  }
+
+  /* Hide header and footer for cleaner print */
+  [class*="px-4 py-3"] {
+    display: none !important;
+  }
+
+  /* Show print-only content */
+  .print-only {
+    display: flex !important;
+  }
+
+  /* Hide screen-only content in print */
+  .screen-only {
+    display: none !important;
+  }
+
+  /* Card container - for print */
+  .print-slide-page .retro-card-container {
+    max-width: 395px !important;
+    width: 395px !important;
+    /* Fill the sheet, not the screen: 85vh is the browser viewport (up to 1800px
+       tall) and overflowed the 297mm page, pushing every card onto a fresh sheet. */
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 40px !important;
+    background: #F0EFEE !important;
+    overflow: hidden !important;
+    position: relative !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* The printed card is padded by 40px, so the scale keeps the same rhythm there. */
+  .print-slide-page .risiko-page { --risiko-scale-pad: 40px; --risiko-surface: #F0EFEE; }
+  /* Paper always shows the whole sentence of examples: the phone's short reading
+     window must never follow a print onto the sheet. */
+  /* The buttons are not printed, so the print copy carries the scale's lower margin
+     itself; the guidelines stop on the rule. */
+  .print-slide-page .risiko-scale-area { overflow: visible; }
+  /* The work-split fields stretch over the printed card too, instead of standing
+     at the screen's fixed height — the bar and the names follow the fields. */
+  .print-slide-page .workload-lane { height: auto; flex: 1 1 0; }
+
+
+  /* Post-it text areas - maintain frontend layout */
+  textarea {
+    min-height: 120px !important;
+    background: #E4E6E8 !important;
+  }
+
+  /* Match frontend font sizes and spacing: the printed question keeps its own
+     size, the statement a step below it — the same 85% the screen reads. */
+  .retro-heading {
+    font-size: 2rem !important;
+    line-height: 1.2 !important;
+  }
+  .risiko-statement {
+    font-size: 1.7rem !important;
+    line-height: 1.2 !important;
+  }
+
+  /* The work-split card's second half and its examples read as body text on
+     paper too, at the size the deck's other body copy uses. */
+  .risiko-allocation-subheading,
+  .risiko-allocation-examples {
+    font-size: 1rem !important;
+    line-height: 1.4 !important;
+  }
+  .intimacy-question {
+    font-size: 1rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .retro-label {
+    font-size: 1rem !important;
+  }
+
+  .retro-body,
+  .retro-body-copy {
+    font-size: 1rem !important;
+  }
+
+  /* Slide 2-3: Memoji container */
+  .print-memoji-container {
+    position: relative !important;
+    height: 60% !important;
+    margin-top: 16px !important;
+    overflow: visible !important;
+  }
+
+  .print-emoji-scale {
+    height: 100% !important;
+    gap: 0 !important;
+    justify-content: space-between !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+
+  /* On paper the Health Check track reaches its own end point, measured against
+     the printed card rather than the device's width. */
+  .health-check-guide {
+    --health-guide-end: var(--health-guide-print-end);
+  }
+
+  .print-emoji-scale > * {
+    margin-top: 0 !important;
+  }
+
+  .print-memoji-container .text-4xl {
+    font-size: 2.25rem !important;
+    line-height: 1 !important;
+  }
+
+  /* Memojis - use percentage-based positioning for print */
+  .print-memoji {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 56px !important;
+    height: 56px !important;
+    min-width: 56px !important;
+    min-height: 56px !important;
+    max-width: 56px !important;
+    max-height: 56px !important;
+    position: absolute !important;
+    z-index: 9999 !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    background: transparent !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    aspect-ratio: 1 / 1 !important;
+    /* Use CSS custom properties for percentage-based positioning */
+    /* min() keeps the emoji inside the printed card's own box. */
+    left: min(var(--print-left-percent, 70%), calc(100% - 56px)) !important;
+    top: var(--print-anchored-top, min(var(--print-top-percent, 20%), calc(100% - 56px))) !important;
+  }
+
+  .print-memoji img {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 56px !important;
+    height: 56px !important;
+    min-width: 56px !important;
+    min-height: 56px !important;
+    max-width: 56px !important;
+    max-height: 56px !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  /* Ensure flex containers maintain proper height */
+  .print-slide-page .h-full {
+    height: 100% !important;
+  }
+
+  .print-slide-page .flex-1 {
+    flex: 1 !important;
+  }
+
+  /* Post-it print styling */
+  .bg-retro-post-it {
+    background: #E4E6E8 !important;
+    color: #201C1D !important;
+  }
+
+  /* Preserve line breaks in post-its */
+  .whitespace-pre-wrap {
+    white-space: pre-wrap !important;
+  }
+
+  /* Force all images to be visible in print */
+  img {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Notes page - ensure it's on its own page */
+  .print-notes-page {
+    page-break-before: always !important;
+    break-before: page !important;
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  /* Remove any extra spacing that could cause blank pages */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+/* Setup slide fields: placeholder tone matches the question text */
+.name-input-field::placeholder,
+.emoji-picker-input::placeholder {
+  color: rgba(32, 28, 29, 0.55);
+  opacity: 1;
+}
+
+/* All app text shares the pill-label typography */
+#root, #root * {
+  font-weight: 500;
+  font-family: "Figtree", "Hanken Grotesk", Arial, sans-serif;
+  font-feature-settings: "ss01", "ss02", "cv11";
+  letter-spacing: 0.005em;
+  font-style: normal;
+  text-transform: none;
+}
+
+/* Must follow the global typography rule above. The Risikofaktoren statement reads
+   in this same voice, at the same size the card questions use. */
+#root .question-font,
+#root .question-font *,
+#root .retro-heading,
+#root .retro-heading *,
+#root .retro-title,
+#root .retro-title *,
+#root .risiko-statement {
+  font-family: "Stack Sans Notch", "Stack Sans Text", "Figtree", Arial, sans-serif;
+  font-weight: 400;
+  font-feature-settings: normal;
+  letter-spacing: -0.02em;
+}
+
+
+/* Word-by-word reveal for the random question headline */
+@keyframes question-word-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes question-word-settle {
+  from { color: var(--reveal-color, #201C1D); }
+  to { color: #201C1D; }
+}
+.question-word {
+  display: inline-block;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  -ms-hyphens: auto;
+  opacity: 0;
+  color: var(--reveal-color, #201C1D);
+  animation:
+    question-word-enter 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+    question-word-settle 0.24s cubic-bezier(0.4, 0, 0.2, 1) 0.1s forwards;
+}
+
+
+
+
+/* Subtle ambient drift for the background graphic */
+@keyframes bgDrift {
+  0%   { transform: scale(1.06) translate3d(0, 0, 0) rotate(0deg); }
+  33%  { transform: scale(1.08) translate3d(-1.2%, -1%, 0) rotate(0.4deg); }
+  66%  { transform: scale(1.07) translate3d(1%, 1.2%, 0) rotate(-0.3deg); }
+  100% { transform: scale(1.06) translate3d(0, 0, 0) rotate(0deg); }
+}
+.bg-graphic-animated {
+  animation: bgDrift 38s ease-in-out infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bg-graphic-animated { animation: none; }
+}
+
+/* Questions slide: same headline size as all other slides */
+
+/* Phones: the column names take the same column-scaled size as everywhere else
+   (see .risiko-scale-stack .risiko-scale-caption); a half that still cannot fit
+   its column wraps inside it rather than breaking a word in half.
+   The smileys need no phone copy of their token any more — one shared 44px
+   everywhere, the size the answer dot fills. */
+@media (max-width: 767px) {
+  .risiko-scale-caption { line-height: 1.15; hyphens: manual; }
+  .risiko-caption-line { white-space: normal; }
+  /* Phones: the names read the same size as the card's helper sentence — 12px, the
+     app's floor (user: "use info text font size"). A name then spends up to three
+     lines on its own column: its two written halves, and one of them breaking once
+     more at its own space. On a 393px phone that is 13.3px worth of room per line,
+     so every word stands whole; only on a 320px phone does "teilweise" have to take
+     its soft hyphen (Teil-weise) to stay inside its column. */
+  .risiko-scale-stack .risiko-scale-caption { font-size: 12px; }
+}
+
+/* A 2px white gap between neighbouring shares of the work-split bar. */
+.workload-segment-gap { border-left: 2px solid #FFFFFF; background-clip: padding-box; }
+
+/* The Intro card's lede: one long sentence in the display face. It carries the
+   card's whole opening, so it reads a step under the card questions (38.4px) and
+   the paragraphs a step under the body default — the card must hold both without
+   scrolling. Phones step both down again. */
+#root .intro-lede { font-size: 28px; line-height: 1.15; }
+#root .intro-copy { font-size: 16px; line-height: 22px; }
+/* The opening fills the card: the block takes the card's whole height and the
+   four paragraphs spread their gaps through the room that is left. */
+#root .intro-block { flex: 1 1 auto; }
+#root .intro-copy { flex: 1 1 auto; justify-content: space-between; }
+/* Where the card keeps its full width and stands tall enough, the headline grows
+   to the largest size the card still holds without the paragraphs spilling over
+   its lower edge (measured: 32px needs 616px of the 627px content box). */
+@media (min-width: 768px) and (max-width: 1023px) and (min-height: 750px) {
+  #root .intro-lede { font-size: 32px; }
+}
+@media (max-width: 767px) {
+  #root .intro-lede { font-size: 20px; line-height: 1.15; }
+  #root .intro-copy { font-size: 14px; line-height: 20px; }
+}
+/* Desktop: the opening reads as a narrow column instead of spanning the card.
+   Only on windows tall enough to hold the extra lines — the card clips rather
+   than scrolls, so a shorter window keeps the full width. The 320px column needs
+   786px of card, which the card only reaches from a window about 926px tall up. */
+@media (min-width: 1024px) and (min-height: 930px) {
+  #root .intro-lede, #root .intro-copy { max-width: 320px; }
+}
+/* The 288px column needs about 808px of card, which it only finds from a window
+   about 951px tall up — so it waits for a taller window than the 320px column
+   does, and is declared after it so it wins there. */
+@media (min-width: 1024px) and (min-height: 955px) {
+  #root .intro-lede, #root .intro-copy { max-width: 288px; }
+}
+/* Short windows: the card's own height runs out before its width does, so the
+   opening steps down again and the gaps tighten — the paragraphs stop at the
+   12px floor, which is the smallest size anywhere in the app. */
+@media (max-height: 690px) and (max-width: 767px) {
+  #root .intro-block { gap: 12px; }
+  #root .intro-lede { font-size: 16px; line-height: 1.1; }
+  #root .intro-copy { font-size: 12px; line-height: 16px; gap: 8px; }
+}
+@media (max-height: 690px) and (min-width: 768px) {
+  #root .intro-block { gap: 16px; }
+  #root .intro-lede { font-size: 20px; line-height: 1.12; }
+  #root .intro-copy { font-size: 14px; line-height: 19px; gap: 10px; }
+}
+/* Full-height phones: the opening's longest wording needs about 553px while the
+   card's content box holds about 537px, so the gaps tighten here too — the
+   short-window rules above cover windows under 691px, this one the rest. */
+@media (max-width: 767px) and (min-height: 691px) {
+  #root .intro-block { gap: 16px; }
+  #root .intro-copy { gap: 10px; }
+}
+
+
+/* Takeaways "Auf einen Blick" summary */
+.retro-summary { border-top: 1px solid #C9CBD1; border-bottom: 1px solid #C9CBD1; padding: 8px 0; }
+#root .retro-summary-title { font-size: 14px; font-weight: 700; margin: 0 0 4px; color: var(--retro-black); }
+.retro-summary-list { display: grid; gap: 2px; margin: 0; }
+.retro-summary-row { display: grid; grid-template-columns: 130px 1fr; gap: 8px; font-size: 13px; line-height: 18px; color: var(--retro-black); }
+.retro-summary-row dt { color: #6E7078; }
+.retro-summary-row dd { margin: 0; }
+@media (max-width: 767px) { .retro-summary-row { grid-template-columns: 110px 1fr; font-size: 12px; line-height: 16px; } }
+
+/* The work-split card's ratio row stands directly under the lane and names each
+   column's own split on two lines — the shares over the word "Split". The row
+   wears the same solid ink outline the lane's own boundary is drawn with, so the
+   bar and its ratios read as one diagram rather than two separate tables. */
+.risiko-scale-captions.risiko-split-captions {
+  /* the legend reads without an outline, hugging the foot of the lines above it */
+  padding: 0;
+  margin-top: 6px;
+}
+.risiko-split-captions .risiko-scale-caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
