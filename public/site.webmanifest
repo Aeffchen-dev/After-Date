@@ -1,6 +1,6 @@
 {
-  "name": "After the Date",
-  "short_name": "After the Date",
+  "name": "After Date",
+  "short_name": "After Date",
   "description": "Let's make honesty feel safe.",
   "icons": [
     { "src": "favicon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

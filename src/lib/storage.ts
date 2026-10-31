@@ -1,4 +1,4 @@
-// Storage utility for persisting After the Date state with 8-hour expiry
+// Storage utility for persisting After Date state with 8-hour expiry
 
 interface StoredData<T> {
   data: T;
@@ -75,5 +75,5 @@ export const clearExpiredStorage = (): void => {
 export const STORAGE_KEYS = {
   CURRENT_CARD: 'after-date-current-card',
   PEOPLE: 'after-date-people',
-  ANSWERS: 'after-date-answers'
+  ANSWERS: 'after-date-answers-v2'
 } as const;

@@ -3,6 +3,7 @@ import ActionRow from "@/components/ActionRow";
 import RevealText from "@/components/RevealText";
 import BgVector from "@/components/BgVector";
 import SmileyScale from "@/components/SmileyScale";
+import ChipGroup from "@/components/ChipGroup";
 import { ActiveSlideContext } from "@/components/ActiveSlideContext";
 import { Heart } from "lucide-react";
 
@@ -10,7 +11,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Keyboard } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 import { saveToStorage, loadFromStorage, clearExpiredStorage, STORAGE_KEYS } from "@/lib/storage";
-import { fetchGuidance, guidanceEnabled, type Guidance, type GuidanceAnswer } from "@/lib/guidance";
+import { fetchGuidance, guidanceEnabled, type Guidance, type GuidanceAnswer, type GuidanceRequest } from "@/lib/guidance";
 
 import "swiper/css";
 
@@ -18,70 +19,205 @@ const INK = "#201C1D";
 const GREY_FIELD = "#E4E6E8";
 const PINK = "#F39FFF";
 
-// One conversation card: the English title rides in the pill above the card, the
-// German question is the card's big question.
-interface TalkCard {
+/** A round of the game; its colours mark every card in it. */
+interface Phase {
   title: string;
-  question: string;
   /** Pill swatch and the colour each word flashes in */
   pill: string;
   /** Dot inside the pill swatch */
   pillDot: string;
-  /** Fill of a picked smiley; light enough for the ink face drawn on it */
+  /** Fill of a picked smiley or chip; light enough for ink on it */
   face: string;
-  /** Optional quiet line under the answers */
-  hint?: string;
 }
 
-const TALK_CARDS: TalkCard[] = [
-  { title: "Tell me", question: "Was möchtest du mir von deinem Date erzählen?", pill: "#FF4D00", pillDot: INK, face: "#FFB28F" },
-  { title: "I'm listening", question: "Was hat das gerade in mir ausgelöst?", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF" },
-  { title: "The hard part", question: "Was fällt uns gerade schwer zu sagen oder zu hören?", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF" },
-  { title: "Underneath", question: "Welche Wünsche, Ängste oder Bedürfnisse stecken dahinter?", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D" },
-  { title: "You & me", question: "Was brauchen wir voneinander, um uns sicher und frei zu fühlen?", pill: "#5C1524", pillDot: "#FF6BEF", face: "#FFA6F4" },
+const PHASES: Phase[] = [
+  { title: "Ankommen", pill: "#FF4D00", pillDot: INK, face: "#FFB28F" },
+  { title: "Sag es", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF" },
+  { title: "Erzähl mir", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF" },
+  { title: "Das Schwierige", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D" },
+  { title: "Wir", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400" },
+];
+
+/** Who answers a card: the person who had the date, the other one, or both. */
+type Who = "date" | "listener" | "both";
+
+interface GameCard {
+  id: string;
+  phase: number;
+  who: Who;
+  question: string;
+  /** Quiet line under the question: how to play this card */
+  hint?: string;
+  scale?: boolean;
+  chips?: string[];
+  /** Placeholder of the text field; no field without it */
+  text?: string;
+  /** Offers "Hilf mir, es zu sagen": the AI turns notes into words to say out loud */
+  phrase?: boolean;
+  /** Shows what the listener picked on that card, so the teller knows what to cover */
+  showWishesFrom?: string;
+  /** Shows the chips both people picked */
+  showMatches?: boolean;
+}
+
+const NOTHING_YET = "Lieber erst mal nichts";
+const FEELINGS = ["Eifersucht", "Unsicherheit", "Angst", "Neugier", "Freude für dich", "Erleichterung", "Gelassenheit"];
+
+const GAME_CARDS: GameCard[] = [
   {
-    title: "Still us",
-    question: "Was möchten wir einander jetzt mitgeben?",
-    pill: "#FFD400",
-    pillDot: "#6C2D01",
-    face: "#FFD400",
-    hint: "Das Gespräch endet. Eure Verbindung bleibt.",
+    id: "arrive",
+    phase: 0,
+    who: "both",
+    question: "Wie fühlst du dich gerade, wenn du daran denkst, dass wir gleich über ein Date sprechen?",
+    scale: true,
+    chips: ["Vorfreude", "Neugier", "Nervosität", "Unsicherheit", "Eifersucht", "Angst", "Gelassenheit"],
+  },
+  {
+    id: "safe",
+    phase: 0,
+    who: "both",
+    question: "Was brauchst du, damit du heute offen sein kannst?",
+    chips: ["Zeit", "Nähe", "Ehrlichkeit", "Pausen", "Humor", "Nicht zu viele Details"],
+    text: "Oder in deinen Worten …",
+  },
+  {
+    id: "say",
+    phase: 1,
+    who: "date",
+    question: "Ich hatte ein Date und möchte dir davon erzählen.",
+    hint: "Lies den Satz laut vor. Wenn dir die Worte fehlen, schreib Stichworte auf und lass dir beim Formulieren helfen.",
+    text: "Was möchtest du sagen? Stichworte reichen.",
+    phrase: true,
+  },
+  {
+    id: "hear",
+    phase: 1,
+    who: "listener",
+    question: "Was löst das gerade in dir aus?",
+    hint: "Alles darf da sein. Du musst es nicht erklären.",
+    scale: true,
+    chips: FEELINGS,
+    text: "Wenn du magst, ein paar Worte dazu …",
+  },
+  {
+    id: "howmuch",
+    phase: 1,
+    who: "listener",
+    question: "Wie viel möchtest du wissen?",
+    hint: "Du bestimmst das Tempo. Was du nicht auswählst, bleibt erst mal ungesagt.",
+    chips: ["Wie es dir ging", "Was ihr gemacht habt", "Wer die Person ist", "Ob ihr euch wiedersehen wollt", "Körperliches", NOTHING_YET],
+  },
+  {
+    id: "tell",
+    phase: 2,
+    who: "date",
+    question: "Erzähl mir von deinem Date.",
+    showWishesFrom: "howmuch",
+    text: "Was du erzählt hast, in Stichworten …",
+  },
+  {
+    id: "listen",
+    phase: 2,
+    who: "listener",
+    question: "Was geht dir durch den Kopf, während du zuhörst?",
+    scale: true,
+    text: "Gedanken, Fragen, Gefühle …",
+  },
+  {
+    id: "touched",
+    phase: 2,
+    who: "date",
+    question: "Gab es etwas, das dich berührt hat, und etwas, das du dich kaum zu erzählen traust?",
+    hint: "Du darfst passen. Ehrlich sein heißt nicht, alles sagen zu müssen.",
+    text: "Was du teilen magst …",
+  },
+  {
+    id: "worries",
+    phase: 3,
+    who: "listener",
+    question: "Welche Sorgen hast du gerade, obwohl du weißt, dass sie nicht stimmen müssen?",
+    text: "Zum Beispiel: Ich habe Angst, dass …",
+  },
+  {
+    id: "answer",
+    phase: 3,
+    who: "date",
+    question: "Was möchtest du antworten, nachdem du das gehört hast?",
+    hint: "Nicht verteidigen oder erklären. Erst sagen, was du gehört hast, dann, was wahr ist für dich.",
+    text: "Ich habe gehört, dass … Und für mich ist wahr, dass …",
+  },
+  {
+    id: "need",
+    phase: 3,
+    who: "listener",
+    question: "Was würde dir jetzt helfen, dich geliebt, sicher und besonders zu fühlen?",
+    chips: ["Eine Umarmung", "Hören, was ich dir bedeute", "Zeit nur für uns", "Ein Ritual nach Dates", "Mehr wissen", "Erst mal Ruhe"],
+    text: "Oder in deinen Worten …",
+  },
+  {
+    id: "us",
+    phase: 4,
+    who: "date",
+    question: "Was liebst du an uns, das keine andere Begegnung ersetzen kann?",
+    text: "Was nur wir haben …",
+  },
+  {
+    id: "now",
+    phase: 4,
+    who: "both",
+    question: "Worauf hast du jetzt mit mir Lust?",
+    chips: ["Kuscheln", "Küssen", "Reden", "Lachen", "Gemeinsam etwas unternehmen", "Einfach beieinander sein", "Zeit für mich"],
+    showMatches: true,
   },
 ];
 
 const HOLD_QUESTION = "Can we just hold each other for a moment?";
 const HOLD_HINT = "Manchmal braucht es keine weitere Frage, sondern erst einmal Nähe.";
 
-// Slide order: title, intro, then the six conversation cards.
+// Slide order: title, rules and names, then the game cards.
 const SLIDE_TITLE = "title";
 const SLIDE_INTRO = "intro";
-const SLIDES: string[] = [SLIDE_TITLE, SLIDE_INTRO, ...TALK_CARDS.map((_, i) => `talk-${i}`)];
+const SLIDES: string[] = [SLIDE_TITLE, SLIDE_INTRO, ...GAME_CARDS.map((c) => c.id)];
+const CARD_BY_ID = Object.fromEntries(GAME_CARDS.map((c) => [c.id, c])) as Record<string, GameCard>;
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
-/** The two people talking; `dateIdx` marks who had the date. */
+/** The two people playing; `dateIdx` marks who had the date. */
 interface People {
   names: [string, string];
   dateIdx: 0 | 1;
 }
 
-/** One card's answers, one slot per person. */
-interface CardAnswers {
-  mood: [number | null, number | null];
-  text: [string, string];
+interface PersonAnswer {
+  mood: number | null;
+  chips: string[];
+  text: string;
+  passed: boolean;
 }
+
+/** One card's answers, one slot per person (index 0/1 as in `People.names`). */
+type CardAnswers = [PersonAnswer, PersonAnswer];
 
 type GuidanceState =
   | { status: "loading"; key: string }
   | { status: "done"; key: string; data: Guidance }
   | { status: "error"; key: string };
 
-const EMPTY_ANSWERS: CardAnswers = { mood: [null, null], text: ["", ""] };
-// Guidance asks once both have picked a face and written something, after typing pauses.
+const EMPTY_PERSON: PersonAnswer = { mood: null, chips: [], text: "", passed: false };
+const EMPTY_ANSWERS: CardAnswers = [EMPTY_PERSON, EMPTY_PERSON];
+// Guidance asks once a card is answered, after typing pauses.
 const GUIDANCE_DEBOUNCE_MS = 1800;
 
 const fieldCls =
   "swiper-no-swiping retro-input retro-input-dark-text w-full rounded-none border-0 px-3 focus:outline-none focus:ring-2 focus:ring-black/20";
+
+/** A person has answered a card when they passed, or filled what the card asks for. */
+const isAnswered = (card: GameCard, a: PersonAnswer) => {
+  if (a.passed || a.text.trim()) return true;
+  // A text-only card waits for words; otherwise every face and chip row needs a pick.
+  if (!card.scale && !card.chips) return false;
+  return (!card.scale || a.mood !== null) && (!card.chips || a.chips.length > 0);
+};
 
 const AfterDateCards: React.FC = () => {
   const [currentCard, setCurrentCard] = useState(() => {
@@ -96,12 +232,14 @@ const AfterDateCards: React.FC = () => {
   const [people, setPeople] = useState<People>(
     () => loadFromStorage<People>(STORAGE_KEYS.PEOPLE) ?? { names: ["", ""], dateIdx: 0 }
   );
-  const [answers, setAnswers] = useState<Record<number, CardAnswers>>(
-    () => loadFromStorage<Record<number, CardAnswers>>(STORAGE_KEYS.ANSWERS) ?? {}
+  const [answers, setAnswers] = useState<Record<string, CardAnswers>>(
+    () => loadFromStorage<Record<string, CardAnswers>>(STORAGE_KEYS.ANSWERS) ?? {}
   );
-  const [guidance, setGuidance] = useState<Record<number, GuidanceState>>({});
-  const guidanceTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
-  const guidanceAborts = useRef<Record<number, AbortController>>({});
+  const [guidance, setGuidance] = useState<Record<string, GuidanceState>>({});
+  // "Hilf mir, es zu sagen" results, keyed by card id; asked on tap only.
+  const [phrasing, setPhrasing] = useState<Record<string, GuidanceState>>({});
+  const guidanceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const guidanceAborts = useRef<Record<string, AbortController>>({});
 
   useEffect(() => {
     clearExpiredStorage();
@@ -124,37 +262,60 @@ const AfterDateCards: React.FC = () => {
     [people.names]
   );
   const roleOf = (i: 0 | 1): GuidanceAnswer["role"] => (people.dateIdx === i ? "date" : "listener");
+  const listenerIdx = (people.dateIdx === 0 ? 1 : 0) as 0 | 1;
+  const playersOf = (card: GameCard): (0 | 1)[] =>
+    card.who === "both" ? [0, 1] : card.who === "date" ? [people.dateIdx] : [listenerIdx];
 
-  // Ask for guidance on every card whose answers are complete and changed since the last ask.
+  /** What the listener asked to hear, as a sentence for the teller and the AI. */
+  const wishesText = (cardId: string) => {
+    const w = answers[cardId]?.[listenerIdx];
+    if (!w || w.passed || w.chips.length === 0) return "";
+    if (w.chips.includes(NOTHING_YET)) {
+      return `${nameOf(listenerIdx)} möchte gerade lieber nichts Genaues wissen. Sag, dass du da bist, und lass Raum für Fragen.`;
+    }
+    return `${nameOf(listenerIdx)} möchte wissen: ${w.chips.join(", ")}.`;
+  };
+
+  const answerPayload = (card: GameCard, i: 0 | 1, a: PersonAnswer): GuidanceAnswer => ({
+    name: nameOf(i),
+    role: roleOf(i),
+    ...(card.scale && a.mood !== null ? { mood: a.mood } : {}),
+    ...(card.chips ? { chips: a.chips } : {}),
+    ...(card.text ? { text: a.text.trim() } : {}),
+    passed: a.passed,
+  });
+
+  // Mirror every card once all its players have answered, and again when answers change.
   useEffect(() => {
     if (!guidanceEnabled()) return;
-    TALK_CARDS.forEach((card, cardIdx) => {
-      const a = answers[cardIdx];
-      const complete = !!a && a.mood.every((m) => m !== null) && a.text.every((t) => t.trim().length > 0);
-      if (!complete) return;
-      const payload = {
-        cardTitle: card.title,
+    GAME_CARDS.forEach((card) => {
+      // Notes on the "Sag es" card are a draft for the teller, not yet said; it gets wording help instead.
+      if (card.phrase) return;
+      const a = answers[card.id];
+      const players = playersOf(card);
+      if (!a || !players.every((i) => isAnswered(card, a[i]))) return;
+      // Nothing to mirror when everyone passed.
+      if (players.every((i) => a[i].passed)) return;
+      const payload: GuidanceRequest = {
+        mode: "reflect",
+        cardTitle: PHASES[card.phase].title,
         question: card.question,
-        answers: ([0, 1] as const).map((i) => ({
-          name: nameOf(i),
-          role: roleOf(i),
-          mood: a.mood[i] as number,
-          text: a.text[i].trim(),
-        })),
+        answers: players.map((i) => answerPayload(card, i, a[i])),
+        ...(card.showWishesFrom && wishesText(card.showWishesFrom) ? { context: wishesText(card.showWishesFrom) } : {}),
       };
       const key = JSON.stringify(payload);
-      if (guidance[cardIdx]?.key === key) return;
-      clearTimeout(guidanceTimers.current[cardIdx]);
-      guidanceTimers.current[cardIdx] = setTimeout(() => {
-        guidanceAborts.current[cardIdx]?.abort();
+      if (guidance[card.id]?.key === key) return;
+      clearTimeout(guidanceTimers.current[card.id]);
+      guidanceTimers.current[card.id] = setTimeout(() => {
+        guidanceAborts.current[card.id]?.abort();
         const ctrl = new AbortController();
-        guidanceAborts.current[cardIdx] = ctrl;
-        setGuidance((prev) => ({ ...prev, [cardIdx]: { status: "loading", key } }));
+        guidanceAborts.current[card.id] = ctrl;
+        setGuidance((prev) => ({ ...prev, [card.id]: { status: "loading", key } }));
         fetchGuidance(payload, ctrl.signal)
-          .then((data) => setGuidance((prev) => ({ ...prev, [cardIdx]: { status: "done", key, data } })))
+          .then((data) => setGuidance((prev) => ({ ...prev, [card.id]: { status: "done", key, data } })))
           .catch((err) => {
             if (err?.name === "AbortError") return;
-            setGuidance((prev) => ({ ...prev, [cardIdx]: { status: "error", key } }));
+            setGuidance((prev) => ({ ...prev, [card.id]: { status: "error", key } }));
           });
       }, GUIDANCE_DEBOUNCE_MS);
     });
@@ -171,14 +332,36 @@ const AfterDateCards: React.FC = () => {
     };
   }, []);
 
-  const updateAnswer = (cardIdx: number, person: 0 | 1, change: { mood?: number; text?: string }) => {
+  const askPhrasing = (card: GameCard) => {
+    const i = people.dateIdx;
+    const notes = answers[card.id]?.[i]?.text.trim() ?? "";
+    const feelings = answers.arrive?.[listenerIdx];
+    const needs = answers.safe?.[listenerIdx];
+    const context = [
+      feelings && feelings.chips.length ? `${nameOf(listenerIdx)} fühlt gerade: ${feelings.chips.join(", ")}.` : "",
+      needs && needs.chips.length ? `${nameOf(listenerIdx)} braucht heute: ${needs.chips.join(", ")}.` : "",
+      needs && needs.text.trim() ? `${nameOf(listenerIdx)} schreibt: ${needs.text.trim()}` : "",
+    ].filter(Boolean).join(" ");
+    const payload: GuidanceRequest = {
+      mode: "phrase",
+      cardTitle: PHASES[card.phase].title,
+      question: card.question,
+      answers: [{ name: nameOf(i), role: "date", text: notes }],
+      ...(context ? { context } : {}),
+    };
+    const key = JSON.stringify(payload);
+    setPhrasing((prev) => ({ ...prev, [card.id]: { status: "loading", key } }));
+    fetchGuidance(payload)
+      .then((data) => setPhrasing((prev) => ({ ...prev, [card.id]: { status: "done", key, data } })))
+      .catch(() => setPhrasing((prev) => ({ ...prev, [card.id]: { status: "error", key } })));
+  };
+
+  const updateAnswer = (cardId: string, person: 0 | 1, change: Partial<PersonAnswer>) => {
     setAnswers((prev) => {
-      const cur = prev[cardIdx] ?? EMPTY_ANSWERS;
-      const mood = [...cur.mood] as CardAnswers["mood"];
-      const text = [...cur.text] as CardAnswers["text"];
-      if (change.mood !== undefined) mood[person] = change.mood;
-      if (change.text !== undefined) text[person] = change.text;
-      return { ...prev, [cardIdx]: { mood, text } };
+      const cur = prev[cardId] ?? EMPTY_ANSWERS;
+      const next = [...cur] as CardAnswers;
+      next[person] = { ...cur[person], ...change };
+      return { ...prev, [cardId]: next };
     });
   };
 
@@ -240,17 +423,27 @@ const AfterDateCards: React.FC = () => {
 
   const pillOf = (slideId: string): { label: string | null; pill: string; pillDot: string } => {
     if (slideId === SLIDE_TITLE) return { label: null, pill: PINK, pillDot: "#FF4D00" };
-    if (slideId === SLIDE_INTRO) return { label: "Intro", pill: PINK, pillDot: "#FF4D00" };
-    const i = Number(slideId.split("-")[1]);
-    const card = TALK_CARDS[i];
-    return { label: `${pad2(i + 1)} · ${card.title}`, pill: card.pill, pillDot: card.pillDot };
+    if (slideId === SLIDE_INTRO) return { label: "So geht's", pill: PINK, pillDot: "#FF4D00" };
+    const card = CARD_BY_ID[slideId];
+    const phase = PHASES[card.phase];
+    return { label: `${pad2(GAME_CARDS.indexOf(card) + 1)} · ${phase.title}`, pill: phase.pill, pillDot: phase.pillDot };
   };
 
-  const renderGuidance = (cardIdx: number) => {
-    const a = answers[cardIdx];
-    const g = guidance[cardIdx];
+  const holdButton = (label: string) => (
+    <ActionRow
+      iconNode={<Heart size={16} strokeWidth={1.5} color={INK} />}
+      label={label}
+      accent={PINK}
+      fieldBg="#FFFFFF"
+      onClick={() => setHoldOpen(true)}
+    />
+  );
+
+  const renderGuidance = (card: GameCard) => {
+    const a = answers[card.id];
+    const g = guidance[card.id];
     // "Sehr schwer" or "Eher schwer" always offers the hold card, whatever the AI says.
-    const someoneLow = !!a && a.mood.some((m) => m !== null && m <= 2);
+    const someoneLow = !!a && playersOf(card).some((i) => a[i].mood !== null && (a[i].mood as number) <= 2);
     if (!g && !someoneLow) return null;
     return (
       <div className="w-full flex flex-col gap-3 p-4" style={{ background: "#F6F1E8" }} aria-live="polite">
@@ -262,18 +455,126 @@ const AfterDateCards: React.FC = () => {
         {g?.status === "done" && (
           <>
             <p className="retro-body-copy">{g.data.guidance}</p>
-            {g.data.followUpQuestion && <p className="retro-body-copy font-semibold">{g.data.followUpQuestion}</p>}
+            {g.data.followUpQuestion && <p className="retro-body-copy">{g.data.followUpQuestion}</p>}
           </>
         )}
-        {(someoneLow || (g?.status === "done" && g.data.suggestHold)) && (
-          <ActionRow
-            iconNode={<Heart size={16} strokeWidth={1.5} color={INK} />}
-            label="Erst mal Nähe?"
-            accent={PINK}
-            fieldBg="#FFFFFF"
-            onClick={() => setHoldOpen(true)}
-          />
+        {(someoneLow || (g?.status === "done" && g.data.suggestHold)) && holdButton("Erst mal Nähe?")}
+      </div>
+    );
+  };
+
+  const renderPhrasing = (card: GameCard) => {
+    const p = phrasing[card.id];
+    const notes = answers[card.id]?.[people.dateIdx]?.text.trim() ?? "";
+    return (
+      <div className="w-full flex flex-col gap-3">
+        <ActionRow
+          icon="IconPencil"
+          label={p?.status === "done" ? "Nochmal anders sagen" : "Hilf mir, es zu sagen"}
+          accent={PHASES[card.phase].face}
+          iconColor={INK}
+          fieldBg={GREY_FIELD}
+          onClick={() => askPhrasing(card)}
+        />
+        {p && (
+          <div className="w-full flex flex-col gap-3 p-4" style={{ background: "#F6F1E8" }} aria-live="polite">
+            <span className="retro-body-copy-sm opacity-70">
+              {notes ? "So könntest du es sagen" : "Ein möglicher Anfang"}
+            </span>
+            {p.status === "loading" && <p className="retro-body-copy">Einen Moment …</p>}
+            {p.status === "error" && <p className="retro-body-copy">Das hat gerade nicht geklappt. Deine eigenen Worte reichen.</p>}
+            {p.status === "done" && (
+              <>
+                <p className="retro-body-copy">„{p.data.guidance}“</p>
+                {p.data.followUpQuestion && (
+                  <p className="retro-body-copy-sm">Danach kannst du fragen: {p.data.followUpQuestion}</p>
+                )}
+              </>
+            )}
+          </div>
         )}
+      </div>
+    );
+  };
+
+  const renderPlayer = (card: GameCard, i: 0 | 1) => {
+    const a = answers[card.id]?.[i] ?? EMPTY_PERSON;
+    const phase = PHASES[card.phase];
+    const showName = card.who === "both";
+    return (
+      <div key={i} className="w-full flex flex-col gap-3">
+        {showName && (
+          <span className="retro-body-copy-sm">
+            {nameOf(i)} <span className="opacity-60">· {roleOf(i) === "date" ? "hatte das Date" : "hört zu"}</span>
+          </span>
+        )}
+        {a.passed ? (
+          <div className="flex w-full items-center justify-between gap-3 p-3" style={{ background: GREY_FIELD }}>
+            <span className="retro-body-copy">Gepasst. Auch das ist okay.</span>
+            <button
+              type="button"
+              onClick={() => updateAnswer(card.id, i, { passed: false })}
+              className="swiper-no-swiping retro-body-copy-sm shrink-0 border-0 bg-transparent p-0 underline"
+            >
+              Doch antworten
+            </button>
+          </div>
+        ) : (
+          <>
+            {card.scale && (
+              <SmileyScale
+                value={a.mood}
+                onChange={(v) => updateAnswer(card.id, i, { mood: v })}
+                accent={phase.face}
+                label={`Wie fühlt sich das für ${nameOf(i)} an?`}
+              />
+            )}
+            {card.chips && (
+              <ChipGroup
+                options={card.chips}
+                value={a.chips}
+                onChange={(v) => updateAnswer(card.id, i, { chips: v })}
+                accent={phase.face}
+                label={`Antworten von ${nameOf(i)}`}
+              />
+            )}
+            {card.text && (
+              <textarea
+                value={a.text}
+                onChange={(e) => updateAnswer(card.id, i, { text: e.target.value })}
+                placeholder={card.text}
+                aria-label={`Antwort von ${nameOf(i)}`}
+                rows={3}
+                className={`${fieldCls} py-2`}
+                style={{ background: GREY_FIELD }}
+              />
+            )}
+            {card.who !== "both" && (
+              <button
+                type="button"
+                onClick={() => updateAnswer(card.id, i, { passed: true })}
+                className="swiper-no-swiping retro-body-copy-sm self-start border-0 bg-transparent p-0 underline opacity-70"
+              >
+                Passen
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const renderMatches = (card: GameCard) => {
+    const a = answers[card.id];
+    if (!a || a[0].chips.length === 0 || a[1].chips.length === 0) return null;
+    const both = a[0].chips.filter((c) => a[1].chips.includes(c));
+    return (
+      <div className="w-full p-4" style={{ background: PHASES[card.phase].face }}>
+        <p className="retro-body-copy">
+          {both.length
+            ? `Ihr habt beide Lust auf: ${both.join(", ")}.`
+            : "Diesmal wollt ihr Verschiedenes. Was davon geht zuerst?"}
+        </p>
       </div>
     );
   };
@@ -281,19 +582,22 @@ const AfterDateCards: React.FC = () => {
   const renderCard = (slideId: string, index: number) => {
     if (slideId === SLIDE_TITLE) {
       return (
-        <div className="relative flex flex-col items-center w-full h-full text-center" style={{ paddingTop: "30%" }}>
+        <div className="relative flex flex-col items-center w-full h-full text-center" style={{ paddingTop: "24%" }}>
           <h1
             className="retro-title logo-slide-anim logo-glitch"
-            data-text="After the Date"
+            data-text="After Date"
             style={{ fontSize: "84px", lineHeight: 0.86, fontWeight: 500, color: "#3A3A3A" }}
           >
-            After the Date
+            After Date
           </h1>
           <p className="retro-body-copy mt-8 text-center">Let's make honesty feel safe.</p>
+          <p className="retro-body-copy-sm mt-3 text-center opacity-70">
+            Ein Fragespiel für offene Beziehungen: vom Date erzählen, auch wenn es zwickt.
+          </p>
           <div className="absolute z-40 flex items-center" style={{ left: 0, bottom: 0 }}>
             <ActionRow
               icon="IconArrowRight"
-              label="Weiter swipen"
+              label="Los geht's"
               accent="#FF6BEF"
               fieldBg={GREY_FIELD}
               onClick={() => swiperRef?.slideNext()}
@@ -308,19 +612,15 @@ const AfterDateCards: React.FC = () => {
         <div className="flex flex-col justify-start items-start w-full gap-6">
           <h2 className="retro-heading intro-lede w-full">
             <RevealText
-              text="Ein geführtes Gespräch für zwei Menschen, die einander Freiheit geben und trotzdem manchmal mit Eifersucht, Unsicherheit oder Verlustangst kämpfen."
+              text="Jemand von euch hatte ein Date. Dieses Spiel hilft, davon zu erzählen und gut beieinander zu bleiben, auch wenn Eifersucht oder Unsicherheit mitreden."
               color={PINK}
               slideIndex={index}
               stagger={45}
             />
           </h2>
-          <div className="flex flex-col gap-4 w-full retro-body-copy">
-            <p>Sechs Karten, jede davon öffnet ein Gespräch. Wählt auf jeder Karte, wie es sich für euch anfühlt, und schreibt ein paar Worte dazu. Es gibt kein Richtig oder Falsch.</p>
-            <p>Und wenn es gerade keine weitere Frage braucht, sondern erst einmal Nähe: Die Karte „{HOLD_QUESTION}“ könnt ihr jederzeit ziehen.</p>
-          </div>
 
           <fieldset className="w-full flex flex-col gap-3 border-0 p-0 m-0">
-            <legend className="retro-body-copy mb-3">Wer redet heute?</legend>
+            <legend className="retro-body-copy mb-3">Wer spielt?</legend>
             {([0, 1] as const).map((i) => (
               <div key={i} className="flex w-full items-stretch gap-0">
                 <input
@@ -351,47 +651,47 @@ const AfterDateCards: React.FC = () => {
             ))}
           </fieldset>
 
+          <div className="flex flex-col gap-3 w-full retro-body-copy">
+            <p className="retro-body-copy-sm opacity-70">Spielregeln</p>
+            <p>Jede Karte zeigt, wer am Zug ist. Ihr spielt nacheinander, in fünf Runden: Ankommen, Sag es, Erzähl mir, Das Schwierige, Wir.</p>
+            <p>Wer zuhört, bestimmt, wie viel erzählt wird. Wer erzählt, bleibt ehrlich, ohne zu beschönigen.</p>
+            <p>Jede Karte darf gepasst werden. Und „{HOLD_QUESTION}“ geht immer, über den Knopf unten.</p>
+          </div>
+
           {guidanceEnabled() && (
             <p className="retro-body-copy-sm opacity-70">
-              Sobald ihr beide auf einer Karte geantwortet habt, schickt die App eure Antworten auf dieser Karte an eine KI (Claude von Anthropic), die euch einen kurzen Impuls gibt. Auf diesem Gerät bleiben eure Antworten 8 Stunden gespeichert.
+              Sobald eine Karte beantwortet ist, schickt die App die Antworten auf dieser Karte an eine KI (Claude von Anthropic), die euch einen kurzen Impuls gibt. Auf diesem Gerät bleiben eure Antworten 8 Stunden gespeichert.
             </p>
           )}
         </div>
       );
     }
 
-    const cardIdx = Number(slideId.split("-")[1]);
-    const card = TALK_CARDS[cardIdx];
-    const a = answers[cardIdx] ?? EMPTY_ANSWERS;
+    const card = CARD_BY_ID[slideId];
+    const players = playersOf(card);
+    const turn = card.who === "both" ? "Ihr beide" : `${nameOf(players[0])} ist dran`;
+    const wishes = card.showWishesFrom ? wishesText(card.showWishesFrom) : "";
     return (
-      <div className="flex flex-col items-start w-full gap-6">
+      <div className="flex flex-col items-start w-full gap-5">
+        <span
+          className="retro-body-copy-sm inline-flex h-7 items-center rounded-full px-3"
+          style={{ background: PHASES[card.phase].face, color: INK }}
+        >
+          {turn}
+        </span>
         <h2 className="question-font retro-heading w-full" lang="de">
-          <RevealText text={card.question} color={card.pill} slideIndex={index} />
+          <RevealText text={card.question} color={PHASES[card.phase].pill} slideIndex={index} />
         </h2>
-        {([0, 1] as const).map((i) => (
-          <div key={i} className="w-full flex flex-col gap-2">
-            <span className="retro-body-copy-sm">
-              {nameOf(i)} <span className="opacity-60">· {roleOf(i) === "date" ? "hatte das Date" : "hört zu"}</span>
-            </span>
-            <SmileyScale
-              value={a.mood[i]}
-              onChange={(v) => updateAnswer(cardIdx, i, { mood: v })}
-              accent={card.face}
-              label={`Wie fühlt sich das für ${nameOf(i)} an?`}
-            />
-            <textarea
-              value={a.text[i]}
-              onChange={(e) => updateAnswer(cardIdx, i, { text: e.target.value })}
-              placeholder="Ein paar Worte dazu …"
-              aria-label={`Gedanken von ${nameOf(i)}`}
-              rows={3}
-              className={`${fieldCls} py-2`}
-              style={{ background: GREY_FIELD }}
-            />
-          </div>
-        ))}
-        {renderGuidance(cardIdx)}
-        {card.hint && <p className="retro-body-copy">{card.hint}</p>}
+        {card.hint && <p className="retro-body-copy-sm opacity-70 -mt-2">{card.hint}</p>}
+        {card.showWishesFrom && (
+          <p className="retro-body-copy w-full p-3" style={{ background: "#F6F1E8" }}>
+            {wishes || `${nameOf(listenerIdx)} hat noch nichts ausgewählt. Fragt kurz nach, was erzählt werden soll.`}
+          </p>
+        )}
+        {players.map((i) => renderPlayer(card, i))}
+        {card.phrase && renderPhrasing(card)}
+        {card.showMatches && renderMatches(card)}
+        {renderGuidance(card)}
       </div>
     );
   };

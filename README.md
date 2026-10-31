@@ -1,18 +1,18 @@
-# After the Date
+# After Date
 
 Let's make honesty feel safe.
 
-A guided conversation for two people who give each other freedom and still sometimes wrestle with jealousy, insecurity or fear of loss. Six conversation cards, plus one card you can draw at any time: *"Can we just hold each other for a moment?"*
+A question game for open relationships: it helps the person who had a date tell about it, and the other one stay with it, even when jealousy or insecurity come up. Thirteen cards in five rounds (Ankommen, Sag es, Erzähl mir, Das Schwierige, Wir), each showing whose turn it is, plus one card you can draw at any time: *"Can we just hold each other for a moment?"*
 
 Live: https://aeffchen-dev.github.io/After-Date/
 
 ## How it works
 
-On every card both people pick a smiley (1 = sehr schwer … 5 = richtig gut) and write a few words. Once both have answered a card, the app sends that card's answers to a small Cloudflare Worker (`worker/`), which asks Claude for a short, warm impulse: a reflection, one follow-up question, and a nudge towards the hold card when it gets heavy. Answers stay in the browser for 8 hours; the Worker stores nothing.
+Cards ask for a smiley (1 = sehr schwer … 5 = richtig gut), answer chips and/or a few words; any card can be passed. The listener picks how much they want to know, and the teller sees it. Once a card is answered, the app sends that card's answers to a small Cloudflare Worker (`worker/`), which asks Claude for a short, warm impulse: a reflection, one follow-up question, and a nudge towards the hold card when it gets heavy. On the "Sag es" card, "Hilf mir, es zu sagen" turns the teller's notes into words to say out loud. Answers stay in the browser for 8 hours; the Worker stores nothing.
 
 ## Edit the cards
 
-The card texts live at the top of `src/components/AfterDateCards.tsx` (`TALK_CARDS`, `HOLD_QUESTION`, `HOLD_HINT`). The AI's instructions are `SYSTEM_PROMPT` in `worker/src/index.ts`.
+The card texts live at the top of `src/components/AfterDateCards.tsx` (`PHASES`, `GAME_CARDS`, `HOLD_QUESTION`, `HOLD_HINT`). The AI's instructions are `REFLECT_PROMPT` and `PHRASE_PROMPT` in `worker/src/index.ts`.
 
 ## Set up the AI guidance (once)
 

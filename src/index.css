@@ -1863,10 +1863,13 @@ textarea.bg-retro-post-it:focus,
 #root .retro-title,
 #root .retro-title *,
 #root .risiko-statement {
-  font-family: "Stack Sans Notch", "Stack Sans Text", "Figtree", Arial, sans-serif;
-  font-weight: 400;
+  /* Big text wears Kokoro, the display face of the Retro Cards sibling app
+     (Aeffchen-dev/retro-cards-9f129825); its only cut is bold italic. */
+  font-family: "Kokoro", Arial, sans-serif;
+  font-weight: 700;
+  font-style: italic;
   font-feature-settings: normal;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 
