@@ -2,7 +2,8 @@
 // Anthropic API key; this page only ever sends one card's answers to it.
 
 /** Deployed Worker URL. Set VITE_GUIDANCE_URL at build time, or fill in the default. */
-export const GUIDANCE_URL: string = import.meta.env.VITE_GUIDANCE_URL || "";
+export const GUIDANCE_URL: string =
+  import.meta.env.VITE_GUIDANCE_URL || "https://after-date-guidance.janagramlich.workers.dev";
 
 export interface GuidanceAnswer {
   name: string;
