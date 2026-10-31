@@ -73,5 +73,7 @@ export const clearExpiredStorage = (): void => {
 
 // Storage keys
 export const STORAGE_KEYS = {
-  CURRENT_CARD: 'after-date-current-card'
+  CURRENT_CARD: 'after-date-current-card',
+  PEOPLE: 'after-date-people',
+  ANSWERS: 'after-date-answers'
 } as const;

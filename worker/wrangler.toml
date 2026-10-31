@@ -1,0 +1,20 @@
+name = "after-date-guidance"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Pages that may call this Worker (comma separated).
+ALLOWED_ORIGINS = "https://aeffchen-dev.github.io,http://localhost:8080"
+
+# At most 20 guidance requests per minute per visitor IP, so a leaked URL can't run up the bill.
+[[ratelimits]]
+name = "LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 20
+  period = 60
+
+# The API key is a secret, never in this file:
+#   npx wrangler secret put ANTHROPIC_API_KEY

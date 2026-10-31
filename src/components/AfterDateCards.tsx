@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import ActionRow from "@/components/ActionRow";
 import RevealText from "@/components/RevealText";
 import BgVector from "@/components/BgVector";
+import SmileyScale from "@/components/SmileyScale";
 import { ActiveSlideContext } from "@/components/ActiveSlideContext";
 import { Heart } from "lucide-react";
 
@@ -9,6 +10,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Keyboard } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 import { saveToStorage, loadFromStorage, clearExpiredStorage, STORAGE_KEYS } from "@/lib/storage";
+import { fetchGuidance, guidanceEnabled, type Guidance, type GuidanceAnswer } from "@/lib/guidance";
 
 import "swiper/css";
 
@@ -25,21 +27,24 @@ interface TalkCard {
   pill: string;
   /** Dot inside the pill swatch */
   pillDot: string;
-  /** Optional quiet line under the question */
+  /** Fill of a picked smiley; light enough for the ink face drawn on it */
+  face: string;
+  /** Optional quiet line under the answers */
   hint?: string;
 }
 
 const TALK_CARDS: TalkCard[] = [
-  { title: "Tell me", question: "Was möchtest du mir von deinem Date erzählen?", pill: "#FF4D00", pillDot: INK },
-  { title: "I'm listening", question: "Was hat das gerade in mir ausgelöst?", pill: "#B026FF", pillDot: "#5343A8" },
-  { title: "The hard part", question: "Was fällt uns gerade schwer zu sagen oder zu hören?", pill: "#00A9FF", pillDot: "#C6D0E0" },
-  { title: "Underneath", question: "Welche Wünsche, Ängste oder Bedürfnisse stecken dahinter?", pill: "#0B7A35", pillDot: "#B6FF4D" },
-  { title: "You & me", question: "Was brauchen wir voneinander, um uns sicher und frei zu fühlen?", pill: "#5C1524", pillDot: "#FF6BEF" },
+  { title: "Tell me", question: "Was möchtest du mir von deinem Date erzählen?", pill: "#FF4D00", pillDot: INK, face: "#FFB28F" },
+  { title: "I'm listening", question: "Was hat das gerade in mir ausgelöst?", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF" },
+  { title: "The hard part", question: "Was fällt uns gerade schwer zu sagen oder zu hören?", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF" },
+  { title: "Underneath", question: "Welche Wünsche, Ängste oder Bedürfnisse stecken dahinter?", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D" },
+  { title: "You & me", question: "Was brauchen wir voneinander, um uns sicher und frei zu fühlen?", pill: "#5C1524", pillDot: "#FF6BEF", face: "#FFA6F4" },
   {
     title: "Still us",
     question: "Was möchten wir einander jetzt mitgeben?",
     pill: "#FFD400",
     pillDot: "#6C2D01",
+    face: "#FFD400",
     hint: "Das Gespräch endet. Eure Verbindung bleibt.",
   },
 ];
@@ -54,6 +59,30 @@ const SLIDES: string[] = [SLIDE_TITLE, SLIDE_INTRO, ...TALK_CARDS.map((_, i) => 
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
+/** The two people talking; `dateIdx` marks who had the date. */
+interface People {
+  names: [string, string];
+  dateIdx: 0 | 1;
+}
+
+/** One card's answers, one slot per person. */
+interface CardAnswers {
+  mood: [number | null, number | null];
+  text: [string, string];
+}
+
+type GuidanceState =
+  | { status: "loading"; key: string }
+  | { status: "done"; key: string; data: Guidance }
+  | { status: "error"; key: string };
+
+const EMPTY_ANSWERS: CardAnswers = { mood: [null, null], text: ["", ""] };
+// Guidance asks once both have picked a face and written something, after typing pauses.
+const GUIDANCE_DEBOUNCE_MS = 1800;
+
+const fieldCls =
+  "swiper-no-swiping retro-input retro-input-dark-text w-full rounded-none border-0 px-3 focus:outline-none focus:ring-2 focus:ring-black/20";
+
 const AfterDateCards: React.FC = () => {
   const [currentCard, setCurrentCard] = useState(() => {
     const saved = loadFromStorage<number>(STORAGE_KEYS.CURRENT_CARD);
@@ -64,6 +93,15 @@ const AfterDateCards: React.FC = () => {
   const [viewportHeight, setViewportHeight] = useState(() =>
     typeof window !== "undefined" ? window.innerHeight : 767
   );
+  const [people, setPeople] = useState<People>(
+    () => loadFromStorage<People>(STORAGE_KEYS.PEOPLE) ?? { names: ["", ""], dateIdx: 0 }
+  );
+  const [answers, setAnswers] = useState<Record<number, CardAnswers>>(
+    () => loadFromStorage<Record<number, CardAnswers>>(STORAGE_KEYS.ANSWERS) ?? {}
+  );
+  const [guidance, setGuidance] = useState<Record<number, GuidanceState>>({});
+  const guidanceTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+  const guidanceAborts = useRef<Record<number, AbortController>>({});
 
   useEffect(() => {
     clearExpiredStorage();
@@ -72,6 +110,77 @@ const AfterDateCards: React.FC = () => {
   useEffect(() => {
     saveToStorage(STORAGE_KEYS.CURRENT_CARD, currentCard);
   }, [currentCard]);
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.PEOPLE, people);
+  }, [people]);
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.ANSWERS, answers);
+  }, [answers]);
+
+  const nameOf = useCallback(
+    (i: 0 | 1) => people.names[i].trim() || (i === 0 ? "Person 1" : "Person 2"),
+    [people.names]
+  );
+  const roleOf = (i: 0 | 1): GuidanceAnswer["role"] => (people.dateIdx === i ? "date" : "listener");
+
+  // Ask for guidance on every card whose answers are complete and changed since the last ask.
+  useEffect(() => {
+    if (!guidanceEnabled()) return;
+    TALK_CARDS.forEach((card, cardIdx) => {
+      const a = answers[cardIdx];
+      const complete = !!a && a.mood.every((m) => m !== null) && a.text.every((t) => t.trim().length > 0);
+      if (!complete) return;
+      const payload = {
+        cardTitle: card.title,
+        question: card.question,
+        answers: ([0, 1] as const).map((i) => ({
+          name: nameOf(i),
+          role: roleOf(i),
+          mood: a.mood[i] as number,
+          text: a.text[i].trim(),
+        })),
+      };
+      const key = JSON.stringify(payload);
+      if (guidance[cardIdx]?.key === key) return;
+      clearTimeout(guidanceTimers.current[cardIdx]);
+      guidanceTimers.current[cardIdx] = setTimeout(() => {
+        guidanceAborts.current[cardIdx]?.abort();
+        const ctrl = new AbortController();
+        guidanceAborts.current[cardIdx] = ctrl;
+        setGuidance((prev) => ({ ...prev, [cardIdx]: { status: "loading", key } }));
+        fetchGuidance(payload, ctrl.signal)
+          .then((data) => setGuidance((prev) => ({ ...prev, [cardIdx]: { status: "done", key, data } })))
+          .catch((err) => {
+            if (err?.name === "AbortError") return;
+            setGuidance((prev) => ({ ...prev, [cardIdx]: { status: "error", key } }));
+          });
+      }, GUIDANCE_DEBOUNCE_MS);
+    });
+    // `guidance` is read only to skip unchanged answers; asking again on its own updates would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answers, people]);
+
+  useEffect(() => {
+    const timers = guidanceTimers.current;
+    const aborts = guidanceAborts.current;
+    return () => {
+      Object.values(timers).forEach(clearTimeout);
+      Object.values(aborts).forEach((c) => c.abort());
+    };
+  }, []);
+
+  const updateAnswer = (cardIdx: number, person: 0 | 1, change: { mood?: number; text?: string }) => {
+    setAnswers((prev) => {
+      const cur = prev[cardIdx] ?? EMPTY_ANSWERS;
+      const mood = [...cur.mood] as CardAnswers["mood"];
+      const text = [...cur.text] as CardAnswers["text"];
+      if (change.mood !== undefined) mood[person] = change.mood;
+      if (change.text !== undefined) text[person] = change.text;
+      return { ...prev, [cardIdx]: { mood, text } };
+    });
+  };
 
   // Follow the visible viewport so mobile browser bars never cut a card.
   useEffect(() => {
@@ -137,6 +246,37 @@ const AfterDateCards: React.FC = () => {
     return { label: `${pad2(i + 1)} · ${card.title}`, pill: card.pill, pillDot: card.pillDot };
   };
 
+  const renderGuidance = (cardIdx: number) => {
+    const a = answers[cardIdx];
+    const g = guidance[cardIdx];
+    const someoneLow = !!a && a.mood.some((m) => m === 1);
+    if (!g && !someoneLow) return null;
+    return (
+      <div className="w-full flex flex-col gap-3 p-4" style={{ background: "#F6F1E8" }} aria-live="polite">
+        <span className="retro-body-copy-sm opacity-70">Impuls für euch</span>
+        {g?.status === "loading" && <p className="retro-body-copy">Einen Moment, ich lese mit …</p>}
+        {g?.status === "error" && (
+          <p className="retro-body-copy">Gerade kam kein Impuls zustande. Redet einfach weiter, ihr braucht ihn nicht.</p>
+        )}
+        {g?.status === "done" && (
+          <>
+            <p className="retro-body-copy">{g.data.guidance}</p>
+            {g.data.followUpQuestion && <p className="retro-body-copy font-semibold">{g.data.followUpQuestion}</p>}
+          </>
+        )}
+        {(someoneLow || (g?.status === "done" && g.data.suggestHold)) && (
+          <ActionRow
+            iconNode={<Heart size={16} strokeWidth={1.5} color={INK} />}
+            label="Erst mal Nähe?"
+            accent={PINK}
+            fieldBg="#FFFFFF"
+            onClick={() => setHoldOpen(true)}
+          />
+        )}
+      </div>
+    );
+  };
+
   const renderCard = (slideId: string, index: number) => {
     if (slideId === SLIDE_TITLE) {
       return (
@@ -164,32 +304,93 @@ const AfterDateCards: React.FC = () => {
 
     if (slideId === SLIDE_INTRO) {
       return (
-        <div className="flex flex-col justify-start items-start w-full h-full">
-          <div className="flex flex-col items-start gap-6 w-full intro-block">
-            <h2 className="retro-heading intro-lede w-full">
-              <RevealText
-                text="Ein geführtes Gespräch für zwei Menschen, die einander Freiheit geben und trotzdem manchmal mit Eifersucht, Unsicherheit oder Verlustangst kämpfen."
-                color={PINK}
-                slideIndex={index}
-                stagger={45}
-              />
-            </h2>
-            <div className="flex flex-col gap-4 w-full retro-body-copy intro-copy">
-              <p>Sechs Karten, jede davon öffnet ein Gespräch. Nehmt euch Zeit, bleibt neugierig und hört einander zu. Es gibt kein Richtig oder Falsch.</p>
-              <p>Und wenn es gerade keine weitere Frage braucht, sondern erst einmal Nähe: Die Karte „{HOLD_QUESTION}“ könnt ihr jederzeit ziehen.</p>
-            </div>
+        <div className="flex flex-col justify-start items-start w-full gap-6">
+          <h2 className="retro-heading intro-lede w-full">
+            <RevealText
+              text="Ein geführtes Gespräch für zwei Menschen, die einander Freiheit geben und trotzdem manchmal mit Eifersucht, Unsicherheit oder Verlustangst kämpfen."
+              color={PINK}
+              slideIndex={index}
+              stagger={45}
+            />
+          </h2>
+          <div className="flex flex-col gap-4 w-full retro-body-copy">
+            <p>Sechs Karten, jede davon öffnet ein Gespräch. Wählt auf jeder Karte, wie es sich für euch anfühlt, und schreibt ein paar Worte dazu. Es gibt kein Richtig oder Falsch.</p>
+            <p>Und wenn es gerade keine weitere Frage braucht, sondern erst einmal Nähe: Die Karte „{HOLD_QUESTION}“ könnt ihr jederzeit ziehen.</p>
           </div>
+
+          <fieldset className="w-full flex flex-col gap-3 border-0 p-0 m-0">
+            <legend className="retro-body-copy mb-3">Wer redet heute?</legend>
+            {([0, 1] as const).map((i) => (
+              <div key={i} className="flex w-full items-stretch gap-0">
+                <input
+                  type="text"
+                  value={people.names[i]}
+                  onChange={(e) =>
+                    setPeople((p) => {
+                      const names = [...p.names] as People["names"];
+                      names[i] = e.target.value;
+                      return { ...p, names };
+                    })
+                  }
+                  placeholder={i === 0 ? "Dein Name" : "Name deines Gegenübers"}
+                  aria-label={i === 0 ? "Dein Name" : "Name deines Gegenübers"}
+                  className={`${fieldCls} name-input-field h-10`}
+                  style={{ background: GREY_FIELD }}
+                />
+                <button
+                  type="button"
+                  aria-pressed={people.dateIdx === i}
+                  onClick={() => setPeople((p) => ({ ...p, dateIdx: i }))}
+                  className="swiper-no-swiping retro-body-copy-sm shrink-0 h-10 px-3 border-0 rounded-none whitespace-nowrap"
+                  style={{ background: people.dateIdx === i ? PINK : "#FFFFFF", color: INK, boxShadow: `inset 0 0 0 1px ${GREY_FIELD}` }}
+                >
+                  {people.dateIdx === i ? "hatte das Date" : "hört zu"}
+                </button>
+              </div>
+            ))}
+          </fieldset>
+
+          {guidanceEnabled() && (
+            <p className="retro-body-copy-sm opacity-70">
+              Sobald ihr beide auf einer Karte geantwortet habt, schickt die App eure Antworten auf dieser Karte an eine KI (Claude von Anthropic), die euch einen kurzen Impuls gibt. Auf diesem Gerät bleiben eure Antworten 8 Stunden gespeichert.
+            </p>
+          )}
         </div>
       );
     }
 
-    const card = TALK_CARDS[Number(slideId.split("-")[1])];
+    const cardIdx = Number(slideId.split("-")[1]);
+    const card = TALK_CARDS[cardIdx];
+    const a = answers[cardIdx] ?? EMPTY_ANSWERS;
     return (
-      <div className="flex flex-col items-start w-full h-full">
+      <div className="flex flex-col items-start w-full gap-6">
         <h2 className="question-font retro-heading w-full" lang="de">
           <RevealText text={card.question} color={card.pill} slideIndex={index} />
         </h2>
-        {card.hint && <p className="retro-body-copy mt-auto">{card.hint}</p>}
+        {([0, 1] as const).map((i) => (
+          <div key={i} className="w-full flex flex-col gap-2">
+            <span className="retro-body-copy-sm">
+              {nameOf(i)} <span className="opacity-60">· {roleOf(i) === "date" ? "hatte das Date" : "hört zu"}</span>
+            </span>
+            <SmileyScale
+              value={a.mood[i]}
+              onChange={(v) => updateAnswer(cardIdx, i, { mood: v })}
+              accent={card.face}
+              label={`Wie fühlt sich das für ${nameOf(i)} an?`}
+            />
+            <textarea
+              value={a.text[i]}
+              onChange={(e) => updateAnswer(cardIdx, i, { text: e.target.value })}
+              placeholder="Ein paar Worte dazu …"
+              aria-label={`Gedanken von ${nameOf(i)}`}
+              rows={3}
+              className={`${fieldCls} py-2`}
+              style={{ background: GREY_FIELD }}
+            />
+          </div>
+        ))}
+        {renderGuidance(cardIdx)}
+        {card.hint && <p className="retro-body-copy">{card.hint}</p>}
       </div>
     );
   };
@@ -265,6 +466,7 @@ const AfterDateCards: React.FC = () => {
                         className="retro-card-container relative flex-1 w-full max-w-[500px] max-h-[88%] min-h-0 mx-auto flex flex-col justify-start items-start gap-4 rounded-none p-[28px] shadow-2xl overflow-y-auto"
                         style={{
                           backgroundColor: "#FFFFFF",
+                          color: INK,
                           ["--retro-white-rgb" as any]: "32 28 29",
                           ["--retro-post-it" as any]: GREY_FIELD,
                           ["--retro-post-it-text" as any]: INK,
