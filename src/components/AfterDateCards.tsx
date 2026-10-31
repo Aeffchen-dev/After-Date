@@ -249,7 +249,8 @@ const AfterDateCards: React.FC = () => {
   const renderGuidance = (cardIdx: number) => {
     const a = answers[cardIdx];
     const g = guidance[cardIdx];
-    const someoneLow = !!a && a.mood.some((m) => m === 1);
+    // "Sehr schwer" or "Eher schwer" always offers the hold card, whatever the AI says.
+    const someoneLow = !!a && a.mood.some((m) => m !== null && m <= 2);
     if (!g && !someoneLow) return null;
     return (
       <div className="w-full flex flex-col gap-3 p-4" style={{ background: "#F6F1E8" }} aria-live="polite">
