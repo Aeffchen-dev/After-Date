@@ -257,32 +257,6 @@ const GAME_CARDS: GameCard[] = [
       return unsettled || worried || afraid;
     },
   },
-  {
-    id: "feel-help",
-    phase: 2,
-    who: "listener",
-    question: "Was würde dir helfen, mit diesen Gefühlen umzugehen?",
-    chips: ["Mehr Klarheit", "Liebevolle Worte", "Körperliche Nähe", "Zeit für mich", "Gemeinsam darüber reden", "Weniger Details"],
-    text: "Eigene Gedanken …",
-  },
-  {
-    id: "feel-joy",
-    phase: 2,
-    who: "listener",
-    question: "Kannst du dich für mich freuen?",
-    scale: true,
-    scaleLabels: ["Gerade nicht", "Kaum", "Ein bisschen", "Ziemlich", "Von Herzen"],
-    text: "Was gerade im Weg steht …",
-  },
-  {
-    id: "us-changed",
-    phase: 2,
-    who: "listener",
-    question: "Hat sich etwas zwischen uns verändert?",
-    scale: true,
-    scaleLabels: ["Sehr verändert", "Spürbar", "Ein bisschen", "Kaum", "Alles wie vorher"],
-    text: "Was genau …",
-  },
   // 4. Sicherheit: was trägt
   {
     id: "feel-calm",
@@ -379,9 +353,19 @@ const GAME_CARDS: GameCard[] = [
     chips: ["Umarmen", "Kuscheln", "Zusammen einschlafen", "Reden", "Lachen", "Spaziergang", "Me Time"],
     text: "Was wir als Erstes machen …",
   },
+  // Last: a look at the two of them, after the closeness (still a Fühlen question).
+  {
+    id: "us-changed",
+    phase: 2,
+    who: "listener",
+    question: "Hat sich etwas zwischen uns verändert?",
+    scale: true,
+    scaleLabels: ["Sehr verändert", "Spürbar", "Ein bisschen", "Kaum", "Alles wie vorher"],
+    text: "Was genau …",
+  },
 ];
 
-/** The couple's agreements, editable on the "us-rules" card. */
+/** The couple's agreements, editable from the "us-agreements" card. */
 const DEFAULT_RULES: string[] = [
   "Geplante Dates sagen wir uns vorher.",
   "Spontanes erzählen wir am nächsten Tag. Vorher nur, wenn der andere fragt oder wir sonst lügen müssten.",
