@@ -203,6 +203,14 @@ const GAME_CARDS: GameCard[] = [
     },
   },
   {
+    id: "feel-help",
+    phase: 2,
+    who: "listener",
+    question: "Was würde dir helfen, mit diesen Gefühlen umzugehen?",
+    chips: ["Mehr Klarheit", "Liebevolle Worte", "Körperliche Nähe", "Zeit für mich", "Gemeinsam darüber reden", "Weniger Details"],
+    text: "Eigene Gedanken …",
+  },
+  {
     id: "feel-joy",
     phase: 2,
     who: "listener",
