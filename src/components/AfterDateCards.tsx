@@ -730,7 +730,7 @@ const AfterDateCards: React.FC = () => {
     const showName = card.who === "both";
     return (
       <div key={i} className="w-full flex flex-1 flex-col gap-3">
-        {showName && (
+        {showName && !card.text && (
           <span
             className="retro-body-copy-sm self-start inline-flex h-6 items-center px-2"
             style={{ background: PHASES[card.phase].face, color: INK }}
@@ -759,15 +759,25 @@ const AfterDateCards: React.FC = () => {
               />
             )}
             {card.text && (
-              <textarea
-                value={a.text}
-                onChange={(e) => updateAnswer(card.id, i, { text: e.target.value })}
-                placeholder={card.text}
-                aria-label={`Antwort von ${nameOf(i)}`}
-                rows={2}
-                className={`${fieldCls} py-2 flex-1 min-h-[64px] resize-none`}
-                style={{ background: GREY_FIELD }}
-              />
+              // Label tag on top of the field, as on the names slide; on cards for both it names the person.
+              <div className="w-full flex flex-1 flex-col items-start gap-0">
+                <label
+                  htmlFor={`answer-${card.id}-${i}`}
+                  className="retro-body-copy-sm inline-flex min-h-6 items-center px-2"
+                  style={{ background: phase.face, color: INK }}
+                >
+                  {showName ? nameOf(i) : card.text.replace(/\s*…$/, "")}
+                </label>
+                <textarea
+                  id={`answer-${card.id}-${i}`}
+                  value={a.text}
+                  onChange={(e) => updateAnswer(card.id, i, { text: e.target.value })}
+                  placeholder="Deine Antwort"
+                  rows={2}
+                  className={`${fieldCls} py-2 flex-1 min-h-[64px] resize-none`}
+                  style={{ background: GREY_FIELD }}
+                />
+              </div>
             )}
           </>
         }
@@ -1064,13 +1074,16 @@ const AfterDateCards: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-label={HOLD_QUESTION}
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-8 px-6 pb-24 animate-[fadeInUp_0.4s_ease-out_both]"
+            className="fixed inset-0 z-50 flex flex-col items-center px-6 pt-[88px] pb-[96px] animate-[fadeInUp_0.4s_ease-out_both]"
             style={{ backgroundColor: PINK, color: INK }}
           >
-            <HugIllustration />
-            <h2 className="question-font retro-heading w-full max-w-[500px] text-center" lang="en">
-              <RevealText text={HOLD_QUESTION} color="#FF4D00" startDelay={120} />
-            </h2>
+            {/* The hold card sits where the deck's card sits, on a pink page. */}
+            <div className="w-full max-w-[500px] flex-1 max-h-[660px] flex flex-col items-center justify-center gap-8 p-[28px] shadow-2xl" style={{ backgroundColor: "#FFFFFF" }}>
+              <HugIllustration />
+              <h2 className="question-font retro-heading w-full text-center" lang="en">
+                <RevealText text={HOLD_QUESTION} color="#FF4D00" startDelay={120} />
+              </h2>
+            </div>
             <div className="absolute bottom-0 left-0 right-0 flex justify-center px-6 pb-6">
               <ActionRow
                 icon="IconArrowRight"
