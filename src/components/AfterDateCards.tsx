@@ -46,8 +46,6 @@ interface GameCard {
   phase: number;
   who: Who;
   question: string;
-  /** Quiet line under the question: how to play this card */
-  hint?: string;
   /** Guidance for the other person on how to ask, shown in a box in the round's colour */
   tip?: { title: string; lines: string[] };
   scale?: boolean;
@@ -79,7 +77,7 @@ const GAME_CARDS: GameCard[] = [
     question: "Wie sicher fühlst du dich gerade?",
     scale: true,
     scaleEnds: ["Unsicher", "Sicher & verbunden"],
-    chips: ["Freude", "Neugier", "Aufregung", "Unsicherheit", "Eifersucht", "Neid"],
+    chips: ["Freude", "Neugier", "Aufregung", "Unsicherheit", "Eifersucht"],
     text: "Was noch da ist …",
   },
   // 2. Das Date
@@ -88,7 +86,6 @@ const GAME_CARDS: GameCard[] = [
     phase: 1,
     who: "listener",
     question: "Wie viel möchtest du hören?",
-    hint: "Ehrlich sein heißt nicht, jedes Detail zu erzählen.",
     chips: ["Wie es dir ging", "Was ihr gemacht habt", "Wer die Person ist", "Ob ihr euch wiedersehen wollt", "Körperliches", NOTHING_YET],
     text: "Oder in deinen Worten …",
   },
@@ -109,7 +106,7 @@ const GAME_CARDS: GameCard[] = [
     question: "Was löst das in dir aus?",
     scale: true,
     scaleEnds: ["Schwer", "Leicht"],
-    chips: ["Freude", "Neugier", "Unsicherheit", "Eifersucht", "Neid", "Angst"],
+    chips: ["Freude", "Neugier", "Unsicherheit", "Eifersucht", "Angst"],
     text: "Wenn du magst, ein paar Worte …",
     tip: {
       title: "Frag nach",
@@ -124,7 +121,7 @@ const GAME_CARDS: GameCard[] = [
     phase: 2,
     who: "listener",
     question: "Was steckt hinter dem Gefühl?",
-    chips: ["Verlustangst", "Nicht genug sein", "Vergleich", "Ersetzt werden", "Kontrollverlust"],
+    chips: ["Verlustangst", "Neid", "Nicht genug sein", "Vergleich", "Ersetzt werden", "Kontrollverlust"],
     text: "Ich habe Angst, dass …",
   },
   {
@@ -173,7 +170,6 @@ const GAME_CARDS: GameCard[] = [
     phase: 3,
     who: "both",
     question: "Müssen wir unsere Regeln anpassen?",
-    hint: "Tippt eine Regel an, um sie zu ändern. Änderungen erscheinen auf beiden Handys.",
     rules: true,
   },
   {
@@ -947,7 +943,6 @@ const AfterDateCards: React.FC = () => {
         <h2 className="question-font retro-heading w-full" lang="de">
           <RevealText text={card.question} color={PHASES[card.phase].pill} slideIndex={index} />
         </h2>
-        {card.hint && <p className="retro-body-copy-sm opacity-70 -mt-2">{card.hint}</p>}
         {card.showWishesFrom && (
           <p className="retro-body-copy w-full p-3" style={{ background: "#F6F1E8" }}>
             {wishes || `${nameOf(listenerIdx)} hat noch nichts ausgewählt. Fragt kurz nach, was erzählt werden soll.`}
@@ -958,7 +953,7 @@ const AfterDateCards: React.FC = () => {
         {card.tip &&
           renderAdvice(
             `tip-${card.id}`,
-            `${card.tip.title}, ${nameOf(people.dateIdx)}`,
+            card.tip.title,
             <MessageCircleQuestion size={16} strokeWidth={1.5} color={INK} />,
             PHASES[card.phase].face,
             card.tip.lines.map((line) => (
