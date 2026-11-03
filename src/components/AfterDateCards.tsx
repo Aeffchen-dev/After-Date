@@ -18,7 +18,7 @@ import "swiper/css";
 const INK = "#201C1D";
 const GREY_FIELD = "#E4E6E8";
 // The one pink: the Nähe round's colour, used for every pink in the deck.
-const PINK = "#FF6BEF";
+const PINK = "#FFA3F5";
 
 /** A round of the game; its colours mark every card in it. */
 interface Phase {
@@ -29,17 +29,17 @@ interface Phase {
   pillDot: string;
   /** Fill of a picked smiley or chip; light enough for ink on it */
   face: string;
-  /** Page background: the round's colour at shade 900 */
+  /** Page background: the round's colour at shade 950 */
   page: string;
 }
 
 const PHASES: Phase[] = [
-  { title: "Ankommen", pill: "#FF4D00", pillDot: INK, face: "#FFB28F", page: "#7C2D12" },
-  { title: "Erzählen", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF", page: "#581C87" },
-  { title: "Fühlen", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF", page: "#0C4A6E" },
-  { title: "Sicherheit", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400", page: "#713F12" },
-  { title: "Absprachen", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D", page: "#14532D" },
-  { title: "Nähe", pill: PINK, pillDot: INK, face: "#FFC2F7", page: "#701A75" },
+  { title: "Ankommen", pill: "#FF4D00", pillDot: INK, face: "#FFB28F", page: "#431407" },
+  { title: "Erzählen", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF", page: "#3B0764" },
+  { title: "Fühlen", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF", page: "#082F49" },
+  { title: "Sicherheit", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400", page: "#422006" },
+  { title: "Absprachen", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D", page: "#052E16" },
+  { title: "Nähe", pill: PINK, pillDot: INK, face: "#FFC2F7", page: "#4A044E" },
 ];
 
 /** Who answers a card: the person who had the date, the other one, or both. */
@@ -1001,7 +1001,7 @@ const AfterDateCards: React.FC = () => {
                         </div>
                       )}
                       <div
-                        className="retro-card-container relative flex-1 w-full max-w-[500px] max-h-[88%] min-h-0 mx-auto flex flex-col justify-start items-start gap-4 rounded-none p-[28px] shadow-2xl overflow-y-auto"
+                        className="retro-card-container relative flex-1 w-full max-w-[500px] max-h-[88%] min-h-0 mx-auto flex flex-col justify-start items-start gap-4 rounded-none p-[28px] overflow-y-auto"
                         style={{
                           backgroundColor: "#FFFFFF",
                           color: INK,
@@ -1041,7 +1041,7 @@ const AfterDateCards: React.FC = () => {
             style={{ backgroundColor: PINK, color: INK }}
           >
             {/* The hold card sits where the deck's card sits, on a pink page. */}
-            <div className="w-full max-w-[500px] flex-1 max-h-[660px] flex flex-col items-center justify-center gap-8 p-[28px] shadow-2xl" style={{ backgroundColor: "#FFFFFF" }}>
+            <div className="w-full max-w-[500px] flex-1 max-h-[660px] flex flex-col items-center justify-center gap-8 p-[28px]" style={{ backgroundColor: "#FFFFFF" }}>
               <HugIllustration />
               <h2 className="question-font retro-heading w-full text-center" lang="en">
                 <RevealText text={HOLD_QUESTION} color={INK} startDelay={120} />
