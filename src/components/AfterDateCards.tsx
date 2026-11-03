@@ -787,11 +787,12 @@ const AfterDateCards: React.FC = () => {
     );
   };
 
-  const renderRules = (accent: string) => (
-    <div className="w-full flex flex-col gap-3">
+  // Closed: one CTA. Open: the notes take the card (the question steps aside) and the close CTA follows them.
+  const renderRules = (accent: string) => {
+    const toggle = (label: string) => (
       <ActionRow
-        icon="IconPencil"
-        label={rulesOpen ? "Regeln schließen" : `Unsere Regeln ansehen (${rules.length})`}
+        icon={rulesOpen ? "IconClear" : "IconPencil"}
+        label={label}
         accent={accent}
         iconColor={INK}
         fieldBg={GREY_FIELD}
@@ -800,14 +801,25 @@ const AfterDateCards: React.FC = () => {
           setRulesOpen((o) => !o);
         }}
       />
-      {rulesOpen && renderRuleNotes(accent)}
-    </div>
-  );
+    );
+    return (
+      <div className="w-full flex flex-col gap-3">
+        {rulesOpen ? (
+          <>
+            {renderRuleNotes()}
+            {toggle("Regeln schließen")}
+          </>
+        ) : (
+          toggle(`Unsere Regeln ansehen (${rules.length})`)
+        )}
+      </div>
+    );
+  };
 
-  const renderRuleNotes = (accent: string) => (
+  const renderRuleNotes = () => (
     <div className="w-full flex flex-col gap-2">
       {rules.map((rule, i) => (
-        <div key={i} className="relative w-full" style={{ background: accent }}>
+        <div key={i} className="relative w-full" style={{ background: GREY_FIELD }}>
           <textarea
             value={rule}
             onChange={(e) => editRules((prev) => prev.map((r, j) => (j === i ? e.target.value : r)))}
@@ -946,9 +958,11 @@ const AfterDateCards: React.FC = () => {
     const wishes = card.showWishesFrom ? wishesText(card.showWishesFrom) : "";
     return (
       <div className="flex flex-1 flex-col items-start w-full gap-5">
-        <h2 className="question-font retro-heading card-question w-full" lang="de">
-          <RevealText text={card.question} color={PHASES[card.phase].text} slideIndex={index} />
-        </h2>
+        {!(card.rules && rulesOpen) && (
+          <h2 className="question-font retro-heading card-question w-full" lang="de">
+            <RevealText text={card.question} color={PHASES[card.phase].text} slideIndex={index} />
+          </h2>
+        )}
         {card.showWishesFrom && (
           <p className="retro-body-copy w-full p-3" style={{ background: "#F6F1E8" }}>
             {wishes || `${nameOf(listenerIdx)} hat noch nichts ausgewählt. Fragt kurz nach, was erzählt werden soll.`}
