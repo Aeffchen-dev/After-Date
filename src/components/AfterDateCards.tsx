@@ -4,7 +4,7 @@ import RevealText from "@/components/RevealText";
 import SmileyScale from "@/components/SmileyScale";
 import ChipGroup from "@/components/ChipGroup";
 import { ActiveSlideContext } from "@/components/ActiveSlideContext";
-import { Heart, Lightbulb, MessageCircleQuestion } from "lucide-react";
+import { Heart, Lightbulb } from "lucide-react";
 
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Keyboard } from "swiper/modules";
@@ -17,7 +17,8 @@ import "swiper/css";
 
 const INK = "#201C1D";
 const GREY_FIELD = "#E4E6E8";
-const PINK = "#F39FFF";
+// The one pink: the Nähe round's colour, used for every pink in the deck.
+const PINK = "#FF6BEF";
 
 /** A round of the game; its colours mark every card in it. */
 interface Phase {
@@ -38,7 +39,7 @@ const PHASES: Phase[] = [
   { title: "Fühlen", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF", page: "#0C4A6E" },
   { title: "Sicherheit", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400", page: "#713F12" },
   { title: "Absprachen", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D", page: "#14532D" },
-  { title: "Nähe", pill: "#FF6BEF", pillDot: INK, face: "#FFC2F7", page: "#701A75" },
+  { title: "Nähe", pill: PINK, pillDot: INK, face: "#FFC2F7", page: "#701A75" },
 ];
 
 /** Who answers a card: the person who had the date, the other one, or both. */
@@ -50,8 +51,6 @@ interface GameCard {
   phase: number;
   who: Who;
   question: string;
-  /** Guidance for the other person on how to ask, shown in a box in the round's colour */
-  tip?: { title: string; lines: string[] };
   scale?: boolean;
   /** One word per face, worst to best, matching the question */
   scaleLabels?: string[];
@@ -109,13 +108,6 @@ const GAME_CARDS: GameCard[] = [
     scaleLabels: ["Schwer", "Eher schwer", "Gemischt", "Eher leicht", "Leicht"],
     chips: ["Freude", "Neugier", "Unsicherheit", "Eifersucht", "Angst"],
     text: "Wenn du magst, ein paar Worte …",
-    tip: {
-      title: "Frag nach",
-      lines: [
-        "Gab es einen Moment, der sich schwierig angefühlt hat?",
-        "Statt „Du musst doch nicht eifersüchtig sein“ lieber: „Ich möchte verstehen, was sich für dich schwierig anfühlt.“",
-      ],
-    },
   },
   // 3. Fühlen: was dahinter steckt
   {
@@ -373,7 +365,7 @@ const AfterDateCards: React.FC = () => {
   }, [answers]);
 
   const [rulesOpen, setRulesOpen] = useState(false);
-  // Advice (the AI impulse, the "Frag nach" tip) sits behind a CTA per card, opened on tap.
+  // The AI impulse sits behind a CTA per card, opened on tap.
   const [adviceOpen, setAdviceOpen] = useState<Record<string, boolean>>({});
   // Each local edit bumps `edits`; `sent` is the last edit the Worker confirmed. While they
   // differ, this device's rules are newer than the shared copy and are never overwritten by it.
@@ -628,26 +620,15 @@ const AfterDateCards: React.FC = () => {
   const activeGameCard = CARD_BY_ID[SLIDES[currentCard]];
   const pageColour = activeGameCard ? PHASES[activeGameCard.phase].page : INK;
 
-  const holdButton = (label: string) => (
-    <ActionRow
-      iconNode={<Heart size={16} strokeWidth={1.5} color={INK} />}
-      label={label}
-      accent={PINK}
-      fieldBg="#FFFFFF"
-      onClick={() => setHoldOpen(true)}
-    />
-  );
-
   /** A CTA that opens its advice inline on the card, like the rules notes. */
-  // `tile` colours the CTA's icon tile, `accent` the opened box.
-  const renderAdvice = (key: string, label: string, icon: React.ReactNode, accent: string, body: React.ReactNode, tile = accent) => {
+  const renderAdvice = (key: string, label: string, icon: React.ReactNode, accent: string, body: React.ReactNode) => {
     const open = !!adviceOpen[key];
     return (
       <div className="w-full flex flex-col gap-3">
         <ActionRow
           iconNode={icon}
           label={open ? "Schließen" : label}
-          accent={tile}
+          accent={accent}
           fieldBg={GREY_FIELD}
           onClick={() => setAdviceOpen((prev) => ({ ...prev, [key]: !open }))}
         />
@@ -661,17 +642,13 @@ const AfterDateCards: React.FC = () => {
   };
 
   const renderGuidance = (card: GameCard) => {
-    const a = answers[card.id];
     const g = guidance[card.id];
-    // "Sehr schwer" or "Eher schwer" always offers the hold card, whatever the AI says.
-    const someoneLow = !!a && playersOf(card).some((i) => a[i].mood !== null && (a[i].mood as number) <= 2);
-    const offerHold = someoneLow || (g?.status === "done" && g.data.suggestHold);
     // The CTA appears once there is an impulse; while it is written or when none came, nothing shows.
-    if (g?.status !== "done" && !offerHold) return null;
+    // The hold card is not offered here: "Halt mich kurz" under every card is always there.
+    if (g?.status !== "done") return null;
     return (
       <div className="w-full flex flex-col gap-3">
-        {g?.status === "done" &&
-          renderAdvice(
+        {renderAdvice(
             `ai-${card.id}`,
             "Impuls für euch",
             <Lightbulb size={16} strokeWidth={1.5} color={INK} />,
@@ -680,8 +657,7 @@ const AfterDateCards: React.FC = () => {
               <p className="retro-body-copy">{g.data.guidance}</p>
               {g.data.followUpQuestion && <p className="retro-body-copy">{g.data.followUpQuestion}</p>}
             </>
-          )}
-        {offerHold && holdButton("Erst mal Nähe?")}
+        )}
       </div>
     );
   };
@@ -865,7 +841,7 @@ const AfterDateCards: React.FC = () => {
             <ActionRow
               icon="IconArrowRight"
               label="Los geht's"
-              accent="#FF6BEF"
+              accent={PINK}
               fieldBg={GREY_FIELD}
               onClick={() => swiperRef?.slideNext()}
             />
@@ -914,7 +890,7 @@ const AfterDateCards: React.FC = () => {
                     className="mt-2"
                     iconNode={<Heart size={16} strokeWidth={1.5} color={hadDate ? "#FF4D00" : INK} fill={hadDate ? "#FF4D00" : "none"} />}
                     label={hadDate ? "Hatte das Date" : "Hatte das Date?"}
-                    accent={hadDate ? "#FF6BEF" : "#FBE3FF"}
+                    accent={PINK}
                     fieldBg={GREY_FIELD}
                     onClick={() => setPeople((p) => ({ ...p, dateIdx: i }))}
                   />
@@ -926,7 +902,7 @@ const AfterDateCards: React.FC = () => {
           <ActionRow
             icon="IconArrowRight"
             label="Los geht's"
-            accent="#FF6BEF"
+            accent={PINK}
             fieldBg={GREY_FIELD}
             className="mt-6"
             onClick={() => swiperRef?.slideNext()}
@@ -953,17 +929,6 @@ const AfterDateCards: React.FC = () => {
         )}
         {!card.rules && players.map((i) => renderPlayer(card, i))}
         {card.rules && renderRules(PHASES[card.phase].pill)}
-        {card.tip &&
-          renderAdvice(
-            `tip-${card.id}`,
-            card.tip.title,
-            <MessageCircleQuestion size={16} strokeWidth={1.5} color={inkOn(PHASES[card.phase].pill)} />,
-            PHASES[card.phase].face,
-            card.tip.lines.map((line) => (
-              <p key={line} className="retro-body-copy">{line}</p>
-            )),
-            PHASES[card.phase].pill
-          )}
         {card.phrase && renderPhrasing(card)}
         {renderGuidance(card)}
       </div>
