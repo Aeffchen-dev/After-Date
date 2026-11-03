@@ -61,13 +61,28 @@ interface GameCard {
   chips?: string[];
   /** Placeholder of the text field; no field without it */
   text?: string;
-  /** Several text fields instead of one, each with its own prompt as placeholder */
-  prompts?: string[];
+  /** Several text fields instead of one, each with its own prompt as placeholder. A prompt with
+   *  `topics` shows only when the listener asked to hear one of them on the `showWishesFrom` card. */
+  prompts?: Prompt[];
   /** Shows what the listener picked on that card, so the teller knows what to cover */
   showWishesFrom?: string;
 }
 
+interface Prompt {
+  q: string;
+  topics?: string[];
+}
+
 const NOTHING_YET = "Lieber erst mal nichts";
+// What the listener can ask to hear; the date card's prompts follow these picks.
+const TOPIC_FEELINGS = "Wie es dir ging";
+const TOPIC_WHAT = "Was ihr gemacht habt";
+const TOPIC_WHO = "Wer die Person ist";
+const TOPIC_AGAIN = "Ob ihr euch wiedersehen wollt";
+const TOPIC_BODY = "Körperliches";
+const TOPICS = [TOPIC_FEELINGS, TOPIC_WHAT, TOPIC_WHO, TOPIC_AGAIN, TOPIC_BODY];
+// Check-in feelings that ask the teller to go gently.
+const TENDER_FEELINGS = ["Unsicher", "Eifersüchtig", "Ängstlich", "Überfordert", "Unwohl"];
 
 // One question per card; every scale or chip row is followed by a text field.
 // Scales are answered by the listener only, so a card never shows two of them.
@@ -88,7 +103,7 @@ const GAME_CARDS: GameCard[] = [
     phase: 0,
     who: "listener",
     question: "Wie viel möchtest du hören?",
-    chips: ["Wie es dir ging", "Was ihr gemacht habt", "Wer die Person ist", "Ob ihr euch wiedersehen wollt", "Körperliches", NOTHING_YET],
+    chips: [...TOPICS, NOTHING_YET],
     text: "Oder in deinen Worten …",
   },
   // 2. Erzählen: vom Date, und was es gleich auslöst
@@ -98,12 +113,13 @@ const GAME_CARDS: GameCard[] = [
     who: "date",
     question: "Erzähl von deinem Date",
     showWishesFrom: "howmuch",
-    // One field per prompt, to guide the telling.
+    // One field per prompt, to guide the telling; each shows only if the listener wants to hear it.
     prompts: [
-      "Mit wem hast du dich getroffen und wie kam es dazu?",
-      "Wie habt ihr eure Zeit verbracht und wie hast du das Date erlebt?",
-      "Gab es körperliche oder emotionale Nähe, über die wir sprechen sollten?",
-      "Gibt es etwas Wichtiges, das du mir noch erzählen möchtest?",
+      { q: "Mit wem hast du dich getroffen und wie kam es dazu?", topics: [TOPIC_WHO] },
+      { q: "Wie habt ihr eure Zeit verbracht und wie hast du das Date erlebt?", topics: [TOPIC_WHAT, TOPIC_FEELINGS] },
+      { q: "Gab es körperliche oder emotionale Nähe, über die wir sprechen sollten?", topics: [TOPIC_BODY] },
+      { q: "Wollt ihr euch wiedersehen?", topics: [TOPIC_AGAIN] },
+      { q: "Gibt es etwas Wichtiges, das du mir noch erzählen möchtest?" },
     ],
   },
   {
@@ -306,7 +322,7 @@ const fieldCls =
 const answerText = (card: GameCard, a: PersonAnswer) =>
   card.prompts
     ? card.prompts
-        .map((q, k) => (a.texts?.[k]?.trim() ? `${q} ${a.texts[k].trim()}` : ""))
+        .map((p, k) => (a.texts?.[k]?.trim() ? `${p.q} ${a.texts[k].trim()}` : ""))
         .filter(Boolean)
         .join("\n")
     : a.text.trim();
@@ -479,14 +495,37 @@ const AfterDateCards: React.FC = () => {
   const playersOf = (card: GameCard): (0 | 1)[] =>
     card.who === "both" ? [0, 1] : card.who === "together" ? [0] : card.who === "date" ? [people.dateIdx] : [listenerIdx];
 
-  /** What the listener asked to hear, as a sentence for the teller and the AI. */
-  const wishesText = (cardId: string) => {
+  /** The topics the listener picked, or null while they haven't picked any. */
+  const wishedTopics = (cardId: string): string[] | null => {
     const w = answers[cardId]?.[listenerIdx];
-    if (!w || w.passed || w.chips.length === 0) return "";
-    if (w.chips.includes(NOTHING_YET)) {
+    return w && w.chips.length ? w.chips : null;
+  };
+
+  /** What the listener asked to hear and to leave out, as a sentence for the AI. */
+  const wishesText = (cardId: string) => {
+    const picked = wishedTopics(cardId);
+    if (!picked) return "";
+    if (picked.includes(NOTHING_YET)) {
       return `${nameOf(listenerIdx)} möchte gerade lieber nichts Genaues wissen. Sag, dass du da bist, und lass Raum für Fragen.`;
     }
-    return `${nameOf(listenerIdx)} möchte wissen: ${w.chips.join(", ")}.`;
+    const skip = TOPICS.filter((t) => !picked.includes(t));
+    return `${nameOf(listenerIdx)} möchte wissen: ${picked.join(", ")}.${skip.length ? ` Lieber nicht: ${skip.join(", ")}.` : ""}`;
+  };
+
+  /** How the listener checked in, when it asks the teller to go gently. */
+  const tenderFeelings = () => {
+    const c = answers["checkin-safe"]?.[listenerIdx];
+    if (!c) return [];
+    const picked = c.chips.filter((f) => TENDER_FEELINGS.includes(f));
+    if (!picked.length && c.mood !== null && c.mood <= 2) return ["Unsicher"];
+    return picked;
+  };
+
+  /** A prompt shows unless the listener picked topics and none of its own. */
+  const promptVisible = (card: GameCard, prompt: Prompt) => {
+    if (!prompt.topics || !card.showWishesFrom) return true;
+    const picked = wishedTopics(card.showWishesFrom);
+    return !picked || prompt.topics.some((t) => picked.includes(t));
   };
 
   const answerPayload = (card: GameCard, i: 0 | 1, a: PersonAnswer): GuidanceAnswer => ({
@@ -722,22 +761,25 @@ const AfterDateCards: React.FC = () => {
             )}
             {card.prompts && (
               <div className="w-full flex flex-1 flex-col gap-2">
-                {card.prompts.map((prompt, k) => (
-                  <div key={prompt} className={fillBoxCls}>
-                    <textarea
-                      value={a.texts?.[k] ?? ""}
-                      onChange={(e) => {
-                        const texts = card.prompts!.map((_, n) => a.texts?.[n] ?? "");
-                        texts[k] = e.target.value;
-                        updateAnswer(card.id, i, { texts });
-                      }}
-                      placeholder={prompt}
-                      aria-label={prompt}
-                      className={`${fieldCls} ${fillFieldCls}`}
-                      style={{ background: GREY_FIELD }}
-                    />
-                  </div>
-                ))}
+                {card.prompts.map(
+                  (prompt, k) =>
+                    promptVisible(card, prompt) && (
+                      <div key={prompt.q} className={fillBoxCls}>
+                        <textarea
+                          value={a.texts?.[k] ?? ""}
+                          onChange={(e) => {
+                            const texts = card.prompts!.map((_, n) => a.texts?.[n] ?? "");
+                            texts[k] = e.target.value;
+                            updateAnswer(card.id, i, { texts });
+                          }}
+                          placeholder={prompt.q}
+                          aria-label={prompt.q}
+                          className={`${fieldCls} ${fillFieldCls}`}
+                          style={{ background: GREY_FIELD }}
+                        />
+                      </div>
+                    )
+                )}
               </div>
             )}
           </>
@@ -808,6 +850,36 @@ const AfterDateCards: React.FC = () => {
       </button>
     </div>
   );
+
+  /** On the date card: what to tell and what to leave out, from the listener's check-in picks.
+   *  Nothing shows until the listener has picked something or checked in tenderly. */
+  const renderTellGuide = (wishesFrom: string) => {
+    const picked = wishedTopics(wishesFrom);
+    const tender = tenderFeelings();
+    if (!picked && !tender.length) return null;
+    const name = nameOf(listenerIdx);
+    const nothing = !!picked?.includes(NOTHING_YET);
+    const tell = picked ? TOPICS.filter((t) => picked.includes(t)) : [];
+    const skip = picked && !nothing ? TOPICS.filter((t) => !picked.includes(t)) : [];
+    const row = (label: string, items: string) => (
+      <p className="retro-body-copy">
+        <span className="retro-body-copy-sm opacity-70">{label} </span>
+        {items}
+      </p>
+    );
+    return (
+      <div className="w-full flex flex-col gap-1 p-3" style={{ background: "#F6F1E8" }}>
+        {nothing && <p className="retro-body-copy">{name} möchte gerade nichts Genaues wissen. Sag, dass du da bist.</p>}
+        {tell.length > 0 && row("Erzähl:", tell.join(", "))}
+        {skip.length > 0 && row("Lass weg:", skip.join(", "))}
+        {tender.length > 0 && (
+          <p className="retro-body-copy-sm opacity-70">
+            {name} fühlt sich {tender.map((f) => f.toLowerCase()).join(", ")}. Erzähl behutsam.
+          </p>
+        )}
+      </div>
+    );
+  };
 
   const renderCard = (slideId: string, index: number) => {
     if (slideId === SLIDE_TITLE) {
@@ -900,7 +972,6 @@ const AfterDateCards: React.FC = () => {
 
     const card = CARD_BY_ID[slideId];
     const players = playersOf(card);
-    const wishes = card.showWishesFrom ? wishesText(card.showWishesFrom) : "";
     return (
       <div className="flex flex-1 flex-col items-start w-full gap-5">
         {!(card.rules && rulesOpen) && (
@@ -908,12 +979,7 @@ const AfterDateCards: React.FC = () => {
             <RevealText text={card.question} color={INK} slideIndex={index} />
           </h2>
         )}
-        {/* Only what the listener picked; nothing shows until they have. */}
-        {wishes && (
-          <p className="retro-body-copy w-full p-3" style={{ background: "#F6F1E8" }}>
-            {wishes}
-          </p>
-        )}
+        {card.showWishesFrom && renderTellGuide(card.showWishesFrom)}
         {!card.rules && players.map((i) => renderPlayer(card, i))}
         {card.rules && renderRules(PHASES[card.phase].pill)}
         {renderGuidance(card)}
