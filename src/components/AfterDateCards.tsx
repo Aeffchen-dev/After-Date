@@ -56,6 +56,8 @@ interface GameCard {
   scale?: boolean;
   /** One word per face, worst to best, matching the question */
   scaleLabels?: string[];
+  /** Shown only when this returns true for the listener's earlier answers; skipped otherwise */
+  showIf?: (listener: (cardId: string) => PersonAnswer | undefined) => boolean;
   /** Shows the couple's rules as editable notes */
   rules?: boolean;
   chips?: string[];
@@ -81,6 +83,14 @@ const TOPIC_WHO = "Wer die Person ist";
 const TOPIC_AGAIN = "Ob ihr euch wiedersehen wollt";
 const TOPIC_BODY = "Körperliches";
 const TOPICS = [TOPIC_FEELINGS, TOPIC_WHAT, TOPIC_WHO, TOPIC_AGAIN, TOPIC_BODY];
+// Thoughts after hearing about the date that open the "Was steckt hinter dem Gefühl?" card.
+const UNSETTLED_THOUGHTS = [
+  "Ich fühle mich unsicher",
+  "Ich vergleiche mich",
+  "Ich hätte so etwas auch gerne",
+  "Ich habe Angst vor Veränderung",
+];
+const CALM_WORRIES = "Eigentlich verunsichert mich nichts";
 // Check-in feelings that ask the teller to go gently.
 const TENDER_FEELINGS = ["Unsicher", "Eifersüchtig", "Ängstlich", "Überfordert", "Unwohl"];
 
@@ -155,6 +165,24 @@ const GAME_CARDS: GameCard[] = [
       "Eigentlich verunsichert mich nichts",
     ],
     text: "Eigene Gedanken …",
+  },
+  {
+    // Goes deeper only when something unsettled the listener on the two cards before.
+    id: "feel-deeper",
+    phase: 2,
+    who: "listener",
+    question: "Was steckt hinter dem Gefühl?",
+    chips: ["Verlustangst", "Neid", "Nicht genug sein", "Vergleich", "Ersetzt werden", "Kontrollverlust"],
+    text: "Ich habe Angst, dass …",
+    showIf: (listener) => {
+      const thoughts = listener("feel-trigger");
+      const worries = listener("feel-fears");
+      const unsettled =
+        !!thoughts &&
+        ((thoughts.mood !== null && thoughts.mood <= 2) || thoughts.chips.some((c) => UNSETTLED_THOUGHTS.includes(c)));
+      const worried = !!worries && worries.chips.some((c) => c !== CALM_WORRIES);
+      return unsettled || worried;
+    },
   },
   {
     id: "feel-joy",
@@ -280,7 +308,7 @@ const HOLD_QUESTION = "Können wir uns einen Moment einfach halten?";
 // Slide order: title, names, then the game cards.
 const SLIDE_TITLE = "title";
 const SLIDE_INTRO = "intro";
-const SLIDES: string[] = [SLIDE_TITLE, SLIDE_INTRO, ...GAME_CARDS.map((c) => c.id)];
+const ALL_SLIDES: string[] = [SLIDE_TITLE, SLIDE_INTRO, ...GAME_CARDS.map((c) => c.id)];
 const CARD_BY_ID = Object.fromEntries(GAME_CARDS.map((c) => [c.id, c])) as Record<string, GameCard>;
 
 
@@ -371,7 +399,7 @@ const HugIllustration: React.FC = () => (
 const AfterDateCards: React.FC = () => {
   const [currentCard, setCurrentCard] = useState(() => {
     const saved = loadFromStorage<number>(STORAGE_KEYS.CURRENT_CARD);
-    return saved !== null && saved < SLIDES.length ? saved : 0;
+    return saved !== null && saved < ALL_SLIDES.length ? saved : 0;
   });
   const [swiperRef, setSwiperRef] = useState<SwiperType | null>(null);
   const [holdOpen, setHoldOpen] = useState(false);
@@ -670,6 +698,9 @@ const AfterDateCards: React.FC = () => {
     return { label: phase.title, pill: phase.pill, pillDot: phase.pillDot };
   };
 
+  // Cards with `showIf` join the deck only once the listener's answers call for them.
+  const listenerAnswer = (cardId: string) => answers[cardId]?.[listenerIdx];
+  const SLIDES = ALL_SLIDES.filter((id) => !CARD_BY_ID[id]?.showIf || CARD_BY_ID[id].showIf!(listenerAnswer));
   const activeGameCard = CARD_BY_ID[SLIDES[currentCard]];
   const pageColour = activeGameCard ? PHASES[activeGameCard.phase].page : INK;
 
