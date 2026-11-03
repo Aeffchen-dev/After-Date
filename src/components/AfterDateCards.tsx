@@ -278,6 +278,22 @@ const GAME_CARDS: GameCard[] = [
     text: "Was dir gefehlt hat oder gutgetan hat …",
   },
   {
+    // One shared look back at how the two of them handled it.
+    id: "us-worked",
+    phase: 3,
+    who: "together",
+    question: "Was hat in unserem Umgang damit gut funktioniert?",
+    chips: [
+      "Unsere Ehrlichkeit",
+      "Unser gegenseitiges Vertrauen",
+      "Dass wir Gefühle zugelassen haben",
+      "Dass niemand sich rechtfertigen musste",
+      "Dass wir aufeinander eingegangen sind",
+      "Das fällt mir gerade schwer zu sagen",
+    ],
+    text: "Eigene Gedanken …",
+  },
+  {
     id: "us-special",
     phase: 3,
     who: "both",
