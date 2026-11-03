@@ -126,11 +126,18 @@ const GAME_CARDS: GameCard[] = [
     id: "feel-trigger",
     phase: 1,
     who: "listener",
-    question: "Was löst das in dir aus?",
+    question: "Was geht dir durch den Kopf, nachdem du davon gehört hast?",
     scale: true,
     scaleLabels: ["Schwer", "Eher schwer", "Gemischt", "Eher leicht", "Leicht"],
-    chips: ["Freude", "Neugier", "Unsicherheit", "Eifersucht", "Angst"],
-    text: "Wenn du magst, ein paar Worte …",
+    chips: [
+      "Ich freue mich für dich",
+      "Ich bin neugierig",
+      "Ich fühle mich unsicher",
+      "Ich vergleiche mich",
+      "Ich habe Angst vor Veränderung",
+      "Ich muss es erst verarbeiten",
+    ],
+    text: "Eigene Gedanken …",
   },
   // 3. Fühlen: was dahinter steckt
   {
