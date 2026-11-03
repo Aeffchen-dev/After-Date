@@ -16,5 +16,12 @@ namespace_id = "1001"
   limit = 20
   period = 60
 
+# The couple's shared rules. Create the namespace once and paste its id here:
+#   npx wrangler kv namespace create RULES
+# Without it the Worker answers /rules with 501 and the page keeps rules on the device.
+# [[kv_namespaces]]
+# binding = "RULES"
+# id = "<id from the command above>"
+
 # The API key is a secret, never in this file:
 #   npx wrangler secret put ANTHROPIC_API_KEY

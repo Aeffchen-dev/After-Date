@@ -10,6 +10,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Keyboard } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 import { saveToStorage, loadFromStorage, clearExpiredStorage, STORAGE_KEYS } from "@/lib/storage";
+import { fetchRules, saveRules } from "@/lib/rules";
 import { fetchGuidance, guidanceEnabled, type Guidance, type GuidanceAnswer, type GuidanceRequest } from "@/lib/guidance";
 
 import "swiper/css";
@@ -66,7 +67,6 @@ interface GameCard {
 }
 
 const NOTHING_YET = "Lieber erst mal nichts";
-const FEELINGS = ["Freude", "Neugier", "Aufregung", "Unsicherheit", "Eifersucht", "Angst", "Gelassenheit"];
 
 // One question per card; every scale or chip row is followed by a text field.
 // Scales are answered by the listener only, so a card never shows two of them.
@@ -79,7 +79,7 @@ const GAME_CARDS: GameCard[] = [
     question: "Wie sicher fühlst du dich gerade?",
     scale: true,
     scaleEnds: ["Unsicher", "Sicher & verbunden"],
-    chips: ["Freude", "Neugier", "Aufregung", "Unsicherheit", "Eifersucht"],
+    chips: ["Freude", "Neugier", "Aufregung", "Unsicherheit", "Eifersucht", "Neid"],
     text: "Was noch da ist …",
   },
   // 2. Das Date
@@ -109,7 +109,7 @@ const GAME_CARDS: GameCard[] = [
     question: "Was löst das in dir aus?",
     scale: true,
     scaleEnds: ["Schwer", "Leicht"],
-    chips: ["Freude", "Neugier", "Unsicherheit", "Eifersucht", "Angst"],
+    chips: ["Freude", "Neugier", "Unsicherheit", "Eifersucht", "Neid", "Angst"],
     text: "Wenn du magst, ein paar Worte …",
     tip: {
       title: "Frag nach",
@@ -173,7 +173,7 @@ const GAME_CARDS: GameCard[] = [
     phase: 3,
     who: "both",
     question: "Müssen wir unsere Regeln anpassen?",
-    hint: "Tippt eine Regel an, um sie zu ändern. × streicht sie.",
+    hint: "Tippt eine Regel an, um sie zu ändern. Ihr seht beide dieselben Regeln.",
     rules: true,
   },
   {
@@ -210,34 +210,37 @@ const GAME_CARDS: GameCard[] = [
 
 /** The couple's agreements, editable on the "us-rules" card. */
 const DEFAULT_RULES: string[] = [
-  "Bei ausgemachten Dates sagen wir es uns davor.",
-  "Bei spontanen Dingen währenddessen nur auf Nachfrage oder wenn man sonst lügen müsste, sonst am nächsten Tag.",
-  "Am nächsten Tag verbringen wir Zeit, um wieder zu connecten und ggf. darüber zu sprechen (Ask, don’t tell: Einzelheiten nur, wenn danach gefragt wird). Wer das Date hatte, gibt sich beim anderen besonders Mühe.",
-  "Beim Sex mit anderen wird mit Kondom verhütet.",
-  "Wer eine Person nochmal daten möchte, holt das OK des Partners ein.",
-  "Mit Dates sprechen wir nicht über Beziehungsprobleme oder persönliche Probleme, die wir nicht mit dem Partner besprechen (damit man nichts outsourct).",
-  "Wenn Eifersucht oder Unwohlsein auftaucht, sagen wir es uns, sprechen darüber, geben uns Sicherheit und sagen ggf. dem Date ab.",
-  "Man kann beim Date auch mit mehr als einer Person Sex haben.",
-  "Wir daten allein wie auch zusammen.",
-  "Vor dem Partner wird nicht mit anderen geflirtet, nur wenn wir das gemeinsam machen.",
-  "Wenn wir auf ein Date treffen, halten wir es kurz und stellen den Partner klar in den Vordergrund.",
-  "Wenn wir jemanden attraktiv finden, sagen wir es uns und handhaben das locker und mit Witz.",
-  "Ex-Partner:innen sind tabu (mit Ausnahme von Nadine).",
-  "Man fährt mit Dates nicht in den Urlaub.",
-  "Wenn einer von uns Gefühle entwickelt, reden wir von Anfang an offen und ehrlich darüber und finden gemeinsam eine Lösung.",
-  "Wenn einer Monogamie möchte, machen wir das.",
-  "Mit Dates wird danach nicht (regelmäßig) gechattet oder getroffen.",
-  "Der Partner kann bei Dates ein Veto einlegen.",
-  "Wir daten niemanden, der einem oder uns beiden nahesteht und den man danach oft sehen würde (Freunde, Arbeitskollegen).",
-  "Bett neu beziehen nach einem Date, bevor der Partner kommt: Es sollen keine Spuren vom Date sichtbar sein.",
-  "STI-Test 4–6 Wochen nach Sex mit anderen (mindestens 4 Wochen warten, sonst ist der Test nicht aussagekräftig).",
-  "Man kann bei Dates übernachten und gemeinsam frühstücken, danach geht man nach Hause.",
-  "Wir reden einmal im Monat auf einer Date Night darüber, ob und wie wir daten wollen, sonst nur, wenn es nicht anders geht („Ich möchte gern ein Thema zur offenen Beziehung besprechen, wann hast du dafür Raum?“).",
-  "10 Dates pro Jahr fühlen sich zu viel an.",
-  "Wir sagen dem Date, dass wir in einer offenen Beziehung sind, außer es ist klar ein One-Night-Stand.",
+  "Geplante Dates sagen wir uns vorher.",
+  "Spontanes erzählen wir am nächsten Tag. Vorher nur, wenn der andere fragt oder wir sonst lügen müssten.",
+  "Am Tag danach nehmen wir uns Zeit füreinander. Details gibt es nur auf Nachfrage. Wer das Date hatte, kümmert sich besonders.",
+  "Sex mit anderen nur mit Kondom.",
+  "Eine Person nochmal daten? Nur mit OK des anderen.",
+  "Probleme in der Beziehung oder persönliche Sorgen besprechen wir miteinander, nicht mit Dates.",
+  "Eifersucht oder Unwohlsein sprechen wir sofort an. Wenn nötig, sagen wir das Date ab.",
+  "Sex mit mehr als einer Person beim Date ist okay.",
+  "Wir daten allein und zusammen.",
+  "Kein Flirten mit anderen, wenn der andere dabei ist, außer wir machen es zusammen.",
+  "Treffen wir zufällig ein Date, halten wir es kurz. Wir stehen im Vordergrund.",
+  "Wir sagen uns, wen wir attraktiv finden, locker und mit Humor.",
+  "Ex-Partner:innen sind tabu (außer Nadine).",
+  "Kein Urlaub mit Dates.",
+  "Entstehen Gefühle, sprechen wir sofort offen darüber und finden zusammen eine Lösung.",
+  "Wünscht sich einer von uns Monogamie, machen wir das.",
+  "Kein regelmäßiges Schreiben oder Treffen mit Dates.",
+  "Jede:r von uns hat ein Veto.",
+  "Keine Dates mit Menschen aus unserem Umfeld, etwa Freunde oder Kolleg:innen.",
+  "Nach einem Date das Bett frisch beziehen, bevor der andere kommt.",
+  "STI-Test 4 bis 6 Wochen nach Sex mit anderen, nicht früher.",
+  "Übernachten und Frühstück sind okay, danach geht es nach Hause.",
+  "Einmal im Monat reden wir bei einer Date Night übers Daten. Sonst fragen wir: „Wann hast du Raum dafür?“",
+  "Mehr als 10 Dates im Jahr sind zu viel.",
+  "Dates erfahren, dass wir offen leben, außer bei einem klaren One-Night-Stand.",
 ];
-// Kept without the 8-hour expiry: the rules outlive one conversation.
+// Kept without the 8-hour expiry: the rules outlive one conversation. The Worker holds the
+// shared copy both phones see; this device copy is the fallback while it can't be reached.
 const RULES_KEY = "after-date-rules";
+// Edits are sent to the Worker once typing pauses.
+const RULES_SAVE_DEBOUNCE_MS = 1000;
 
 const HOLD_QUESTION = "Can we just hold each other for a moment?";
 
@@ -357,13 +360,48 @@ const AfterDateCards: React.FC = () => {
     saveToStorage(STORAGE_KEYS.ANSWERS, answers);
   }, [answers]);
 
+  const [rulesOpen, setRulesOpen] = useState(false);
+  // Edits made here are sent on; the copy fetched from the Worker is not sent back.
+  const rulesEdited = useRef(false);
+
+  const loadSharedRules = useCallback(() => {
+    if (rulesEdited.current) return;
+    fetchRules()
+      .then((shared) => {
+        if (shared && !rulesEdited.current) setRules(shared);
+      })
+      .catch(() => {
+        // Offline or not set up: the device copy stays.
+      });
+  }, []);
+
+  useEffect(() => {
+    loadSharedRules();
+  }, [loadSharedRules]);
+
   useEffect(() => {
     try {
       localStorage.setItem(RULES_KEY, JSON.stringify(rules));
     } catch {
       // Private mode: the rules still work for this visit.
     }
+    if (!rulesEdited.current) return;
+    const t = setTimeout(() => {
+      saveRules(rules)
+        .then((ok) => {
+          if (ok) rulesEdited.current = false;
+        })
+        .catch(() => {
+          // Kept on the device; the next edit tries again.
+        });
+    }, RULES_SAVE_DEBOUNCE_MS);
+    return () => clearTimeout(t);
   }, [rules]);
+
+  const editRules = (change: (prev: string[]) => string[]) => {
+    rulesEdited.current = true;
+    setRules(change);
+  };
 
   const nameOf = useCallback(
     (i: 0 | 1) => people.names[i].trim() || (i === 0 ? "Person 1" : "Person 2"),
@@ -532,7 +570,9 @@ const AfterDateCards: React.FC = () => {
     if (slideId === SLIDE_INTRO) return { label: "So geht's", pill: PINK, pillDot: "#FF4D00" };
     const card = CARD_BY_ID[slideId];
     const phase = PHASES[card.phase];
-    return { label: `${pad2(GAME_CARDS.indexOf(card) + 1)} · ${phase.title}`, pill: phase.pill, pillDot: phase.pillDot };
+    // Whose turn it is rides on the round pill, so the card itself keeps its room for answers.
+    const turn = card.who === "both" ? "Ihr beide" : nameOf(playersOf(card)[0]);
+    return { label: `${pad2(GAME_CARDS.indexOf(card) + 1)} · ${phase.title} · ${turn}`, pill: phase.pill, pillDot: phase.pillDot };
   };
 
   const activeGameCard = CARD_BY_ID[SLIDES[currentCard]];
@@ -611,10 +651,13 @@ const AfterDateCards: React.FC = () => {
     const phase = PHASES[card.phase];
     const showName = card.who === "both";
     return (
-      <div key={i} className="w-full flex flex-col gap-3">
+      <div key={i} className="w-full flex flex-1 flex-col gap-3">
         {showName && (
-          <span className="retro-body-copy-sm">
-            {nameOf(i)} <span className="opacity-60">· {roleOf(i) === "date" ? "hatte das Date" : "hört zu"}</span>
+          <span
+            className="retro-body-copy-sm self-start inline-flex h-6 items-center px-2"
+            style={{ background: PHASES[card.phase].face, color: INK }}
+          >
+            {nameOf(i)}
           </span>
         )}
         {
@@ -644,7 +687,7 @@ const AfterDateCards: React.FC = () => {
                 placeholder={card.text}
                 aria-label={`Antwort von ${nameOf(i)}`}
                 rows={2}
-                className={`${fieldCls} py-2`}
+                className={`${fieldCls} py-2 flex-1 min-h-[64px] resize-none`}
                 style={{ background: GREY_FIELD }}
               />
             )}
@@ -655,12 +698,29 @@ const AfterDateCards: React.FC = () => {
   };
 
   const renderRules = () => (
+    <div className="w-full flex flex-col gap-3">
+      <ActionRow
+        icon="IconPencil"
+        label={rulesOpen ? "Regeln schließen" : `Unsere Regeln ansehen (${rules.length})`}
+        accent="#FFF3A8"
+        iconColor={INK}
+        fieldBg={GREY_FIELD}
+        onClick={() => {
+          if (!rulesOpen) loadSharedRules();
+          setRulesOpen((o) => !o);
+        }}
+      />
+      {rulesOpen && renderRuleNotes()}
+    </div>
+  );
+
+  const renderRuleNotes = () => (
     <div className="w-full flex flex-col gap-2">
       {rules.map((rule, i) => (
         <div key={i} className="relative w-full" style={{ background: "#FFF3A8" }}>
           <textarea
             value={rule}
-            onChange={(e) => setRules((prev) => prev.map((r, j) => (j === i ? e.target.value : r)))}
+            onChange={(e) => editRules((prev) => prev.map((r, j) => (j === i ? e.target.value : r)))}
             aria-label={`Regel ${i + 1}`}
             rows={Math.max(2, Math.ceil(rule.length / 26))}
             className={`${fieldCls} retro-body-copy-sm bg-transparent py-2 pr-9`}
@@ -668,7 +728,7 @@ const AfterDateCards: React.FC = () => {
           <button
             type="button"
             aria-label={`Regel ${i + 1} streichen`}
-            onClick={() => setRules((prev) => prev.filter((_, j) => j !== i))}
+            onClick={() => editRules((prev) => prev.filter((_, j) => j !== i))}
             className="swiper-no-swiping absolute right-1 top-1 h-7 w-7 border-0 bg-transparent p-0 retro-body-copy"
             style={{ color: INK }}
           >
@@ -678,7 +738,7 @@ const AfterDateCards: React.FC = () => {
       ))}
       <button
         type="button"
-        onClick={() => setRules((prev) => [...prev, ""])}
+        onClick={() => editRules((prev) => [...prev, ""])}
         className="swiper-no-swiping retro-body-copy-sm self-start h-9 rounded-full border-0 px-3"
         style={{ background: "#FFFFFF", color: INK, boxShadow: "inset 0 0 0 1.5px #C9CBCE" }}
       >
@@ -793,16 +853,9 @@ const AfterDateCards: React.FC = () => {
 
     const card = CARD_BY_ID[slideId];
     const players = playersOf(card);
-    const turn = card.who === "both" ? "Ihr beide" : `${nameOf(players[0])} ist dran`;
     const wishes = card.showWishesFrom ? wishesText(card.showWishesFrom) : "";
     return (
-      <div className="flex flex-col items-start w-full gap-5">
-        <span
-          className="retro-body-copy-sm inline-flex h-7 items-center rounded-full px-3"
-          style={{ background: PHASES[card.phase].face, color: INK }}
-        >
-          {turn}
-        </span>
+      <div className="flex flex-1 flex-col items-start w-full gap-5">
         <h2 className="question-font retro-heading w-full" lang="de">
           <RevealText text={card.question} color={PHASES[card.phase].pill} slideIndex={index} />
         </h2>
@@ -940,14 +993,16 @@ const AfterDateCards: React.FC = () => {
             <h2 className="question-font retro-heading w-full max-w-[500px] text-center" lang="en">
               <RevealText text={HOLD_QUESTION} color="#FF4D00" startDelay={120} />
             </h2>
-            <ActionRow
-              icon="IconArrowRight"
-              label="Weiter"
-              accent={INK}
-              iconColor="#FFFFFF"
-              fieldBg="#FFFFFF"
-              onClick={() => setHoldOpen(false)}
-            />
+            <div className="absolute bottom-0 left-0 right-0 flex justify-center px-6 pb-6">
+              <ActionRow
+                icon="IconArrowRight"
+                label="Weiter"
+                accent={INK}
+                iconColor="#FFFFFF"
+                fieldBg="#FFFFFF"
+                onClick={() => setHoldOpen(false)}
+              />
+            </div>
           </div>
         )}
       </div>
