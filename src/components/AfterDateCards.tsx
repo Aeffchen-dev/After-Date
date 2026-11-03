@@ -253,7 +253,7 @@ const CARD_BY_ID = Object.fromEntries(GAME_CARDS.map((c) => [c.id, c])) as Recor
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
 // How far the page colour moves from the round's colour towards ink (0 = same, 1 = ink).
-const PAGE_DARKEN = 0.45;
+const PAGE_DARKEN = 0.85;
 
 /** Mixes a #RRGGBB colour towards INK. */
 const darken = (hex: string, amount: number) => {
