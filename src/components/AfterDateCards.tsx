@@ -52,8 +52,8 @@ interface GameCard {
   /** Guidance for the other person on how to ask, shown in a box in the round's colour */
   tip?: { title: string; lines: string[] };
   scale?: boolean;
-  /** Words at the two ends of the scale, matching the question */
-  scaleEnds?: [string, string];
+  /** One word per face, worst to best, matching the question */
+  scaleLabels?: string[];
   /** Shows the couple's rules as editable notes */
   rules?: boolean;
   chips?: string[];
@@ -79,7 +79,7 @@ const GAME_CARDS: GameCard[] = [
     who: "listener",
     question: "Wie sicher fühlst du dich gerade?",
     scale: true,
-    scaleEnds: ["Unsicher", "Sicher & verbunden"],
+    scaleLabels: ["Unsicher", "Eher unsicher", "Gemischt", "Eher sicher", "Sicher & verbunden"],
     chips: ["Freude", "Neugier", "Aufregung", "Unsicherheit", "Eifersucht"],
     text: "Was noch da ist …",
   },
@@ -107,7 +107,7 @@ const GAME_CARDS: GameCard[] = [
     who: "listener",
     question: "Was löst das in dir aus?",
     scale: true,
-    scaleEnds: ["Schwer", "Leicht"],
+    scaleLabels: ["Schwer", "Eher schwer", "Gemischt", "Eher leicht", "Leicht"],
     chips: ["Freude", "Neugier", "Unsicherheit", "Eifersucht", "Angst"],
     text: "Wenn du magst, ein paar Worte …",
     tip: {
@@ -158,7 +158,7 @@ const GAME_CARDS: GameCard[] = [
     who: "listener",
     question: "Hast du dich trotzdem geliebt gefühlt?",
     scale: true,
-    scaleEnds: ["Gar nicht", "Ganz und gar"],
+    scaleLabels: ["Gar nicht", "Kaum", "Teils", "Ziemlich", "Ganz und gar"],
     text: "Was dir gefehlt hat oder gutgetan hat …",
   },
   {
@@ -743,8 +743,7 @@ const AfterDateCards: React.FC = () => {
               <SmileyScale
                 value={a.mood}
                 onChange={(v) => updateAnswer(card.id, i, { mood: v })}
-                accent={phase.face}
-                ends={card.scaleEnds}
+                labels={card.scaleLabels}
                 label={`Wie fühlt sich das für ${nameOf(i)} an?`}
               />
             )}
