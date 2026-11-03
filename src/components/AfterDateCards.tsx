@@ -56,6 +56,8 @@ interface GameCard {
   scale?: boolean;
   /** One word per face, worst to best, matching the question */
   scaleLabels?: string[];
+  /** Chips tied to topics the listener may not want to hear (see `prompts`); hidden then */
+  chipTopics?: Record<string, string[]>;
   /** Shown only when this returns true for the listener's earlier answers; skipped otherwise */
   showIf?: (listener: (cardId: string) => PersonAnswer | undefined) => boolean;
   /** Shows the couple's rules as editable notes */
@@ -134,6 +136,23 @@ const GAME_CARDS: GameCard[] = [
     ],
   },
   // 3. Fühlen: was es auslöst und was dahinter steckt
+  {
+    id: "date-liked",
+    phase: 1,
+    who: "date",
+    question: "Was hat dir an der Begegnung gefallen oder gutgetan?",
+    showWishesFrom: "howmuch",
+    chips: [
+      "Die Aufmerksamkeit",
+      "Die sexuelle Anziehung",
+      "Die Gespräche",
+      "Das Neue und Aufregende",
+      "Mich frei und begehrt zu fühlen",
+      "Etwas anderes",
+    ],
+    chipTopics: { "Die sexuelle Anziehung": [TOPIC_BODY] },
+    text: "Eigene Gedanken …",
+  },
   {
     id: "feel-trigger",
     phase: 2,
@@ -590,12 +609,13 @@ const AfterDateCards: React.FC = () => {
     return picked;
   };
 
-  /** A prompt shows unless the listener picked topics and none of its own. */
-  const promptVisible = (card: GameCard, prompt: Prompt) => {
-    if (!prompt.topics || !card.showWishesFrom) return true;
+  /** Content tied to topics shows unless the listener picked topics and none of these. */
+  const topicsWanted = (card: GameCard, topics?: string[]) => {
+    if (!topics || !card.showWishesFrom) return true;
     const picked = wishedTopics(card.showWishesFrom);
-    return !picked || prompt.topics.some((t) => picked.includes(t));
+    return !picked || topics.some((t) => picked.includes(t));
   };
+  const promptVisible = (card: GameCard, prompt: Prompt) => topicsWanted(card, prompt.topics);
 
   const answerPayload = (card: GameCard, i: 0 | 1, a: PersonAnswer): GuidanceAnswer => ({
     name: card.who === "together" ? `${nameOf(0)} und ${nameOf(1)}` : nameOf(i),
@@ -806,7 +826,7 @@ const AfterDateCards: React.FC = () => {
             )}
             {card.chips && (
               <ChipGroup
-                options={card.chips}
+                options={card.chips.filter((c) => topicsWanted(card, card.chipTopics?.[c]))}
                 value={a.chips}
                 onChange={(v) => updateAnswer(card.id, i, { chips: v })}
                 accent={phase.face}
