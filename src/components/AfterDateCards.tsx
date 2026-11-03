@@ -28,15 +28,17 @@ interface Phase {
   pillDot: string;
   /** Fill of a picked smiley or chip; light enough for ink on it */
   face: string;
+  /** The question's colour on the white card: the round's colour, deep enough to read */
+  text: string;
 }
 
 const PHASES: Phase[] = [
-  { title: "Ankommen", pill: "#FF4D00", pillDot: INK, face: "#FFB28F" },
-  { title: "Erzählen", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF" },
-  { title: "Fühlen", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF" },
-  { title: "Sicherheit", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400" },
-  { title: "Absprachen", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D" },
-  { title: "Nähe", pill: "#FF6BEF", pillDot: INK, face: "#FFC2F7" },
+  { title: "Ankommen", pill: "#FF4D00", pillDot: INK, face: "#FFB28F", text: "#E64500" },
+  { title: "Erzählen", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF", text: "#9A1FE0" },
+  { title: "Fühlen", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF", text: "#0082C4" },
+  { title: "Sicherheit", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400", text: "#9C7A00" },
+  { title: "Absprachen", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D", text: "#0B7A35" },
+  { title: "Nähe", pill: "#FF6BEF", pillDot: INK, face: "#FFC2F7", text: "#C92FB6" },
 ];
 
 /** Who answers a card: the person who had the date, the other one, or both. */
@@ -250,7 +252,6 @@ const SLIDE_INTRO = "intro";
 const SLIDES: string[] = [SLIDE_TITLE, SLIDE_INTRO, ...GAME_CARDS.map((c) => c.id)];
 const CARD_BY_ID = Object.fromEntries(GAME_CARDS.map((c) => [c.id, c])) as Record<string, GameCard>;
 
-const pad2 = (n: number) => String(n).padStart(2, "0");
 
 // How far the page colour moves from the round's colour towards ink (0 = same, 1 = ink).
 const PAGE_DARKEN = 0.85;
@@ -622,9 +623,9 @@ const AfterDateCards: React.FC = () => {
     if (slideId === SLIDE_INTRO) return { label: "So geht's", pill: PINK, pillDot: "#FF4D00" };
     const card = CARD_BY_ID[slideId];
     const phase = PHASES[card.phase];
-    // Whose turn it is rides on the round pill, so the card itself keeps its room for answers.
-    const turn = card.who === "both" ? "Ihr beide" : nameOf(playersOf(card)[0]);
-    return { label: `${pad2(GAME_CARDS.indexOf(card) + 1)} · ${phase.title} · ${turn}`, pill: phase.pill, pillDot: phase.pillDot };
+    // The round, plus whose turn it is when only one person answers; cards for both say nothing more.
+    const label = card.who === "both" ? phase.title : `${phase.title} · ${nameOf(playersOf(card)[0])}`;
+    return { label, pill: phase.pill, pillDot: phase.pillDot };
   };
 
   const activeGameCard = CARD_BY_ID[SLIDES[currentCard]];
@@ -878,7 +879,7 @@ const AfterDateCards: React.FC = () => {
     if (slideId === SLIDE_INTRO) {
       return (
         <div className="flex flex-col justify-start items-start w-full gap-6">
-          <h2 id="who-heading" className="question-font retro-heading w-full" lang="de">
+          <h2 id="who-heading" className="question-font retro-heading card-question w-full" lang="de">
             <RevealText text="Wer macht mit?" color={PINK} slideIndex={index} />
           </h2>
 
@@ -942,8 +943,12 @@ const AfterDateCards: React.FC = () => {
     const wishes = card.showWishesFrom ? wishesText(card.showWishesFrom) : "";
     return (
       <div className="flex flex-1 flex-col items-start w-full gap-5">
-        <h2 className="question-font retro-heading w-full" lang="de">
-          <RevealText text={card.question} color={PHASES[card.phase].pill} slideIndex={index} />
+        <h2
+          className="question-font retro-heading card-question w-full"
+          lang="de"
+          style={{ ["--settle-color" as string]: PHASES[card.phase].text } as React.CSSProperties}
+        >
+          <RevealText text={card.question} color={PHASES[card.phase].text} slideIndex={index} />
         </h2>
         {card.showWishesFrom && (
           <p className="retro-body-copy w-full p-3" style={{ background: "#F6F1E8" }}>
