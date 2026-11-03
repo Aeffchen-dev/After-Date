@@ -26,12 +26,14 @@ interface SmileyScaleProps {
   onChange: (value: number) => void;
   /** Fill of the picked face */
   accent: string;
+  /** Words under the two ends; defaults to the first and last mood label */
+  ends?: [string, string];
   /** Accessible name of the radio group, e.g. "Wie fühlt sich das für Jana an?" */
   label: string;
 }
 
 /** Five tappable faces, one choice; works as a radio group for keyboards and screen readers. */
-const SmileyScale: React.FC<SmileyScaleProps> = ({ value, onChange, accent, label }) => {
+const SmileyScale: React.FC<SmileyScaleProps> = ({ value, onChange, accent, ends, label }) => {
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     // Keep arrow keys on the scale instead of paging the deck.
@@ -64,8 +66,8 @@ const SmileyScale: React.FC<SmileyScaleProps> = ({ value, onChange, accent, labe
         })}
       </div>
       <div className="retro-body-copy-sm mt-1 flex justify-between text-[12px] leading-4 opacity-70" aria-hidden="true">
-        <span>{MOOD_LABELS[0]}</span>
-        <span>{MOOD_LABELS[4]}</span>
+        <span>{ends?.[0] ?? MOOD_LABELS[0]}</span>
+        <span>{ends?.[1] ?? MOOD_LABELS[4]}</span>
       </div>
     </div>
   );
