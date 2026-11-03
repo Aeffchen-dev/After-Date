@@ -254,6 +254,18 @@ const CARD_BY_ID = Object.fromEntries(GAME_CARDS.map((c) => [c.id, c])) as Recor
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
+// How far the page colour moves from the round's colour towards ink (0 = same, 1 = ink).
+const PAGE_DARKEN = 0.45;
+
+/** Mixes a #RRGGBB colour towards INK. */
+const darken = (hex: string, amount: number) => {
+  const mix = (from: string, to: string) =>
+    Math.round(parseInt(from, 16) * (1 - amount) + parseInt(to, 16) * amount)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${[1, 3, 5].map((i) => mix(hex.slice(i, i + 2), INK.slice(i, i + 2))).join("")}`;
+};
+
 /** The two people playing; `dateIdx` marks who had the date. */
 interface People {
   names: [string, string];
@@ -618,7 +630,8 @@ const AfterDateCards: React.FC = () => {
   };
 
   const activeGameCard = CARD_BY_ID[SLIDES[currentCard]];
-  const pageColour = activeGameCard ? PHASES[activeGameCard.phase].pill : INK;
+  // A darker shade of the round's colour, so the white card and the pill stand out on it.
+  const pageColour = activeGameCard ? darken(PHASES[activeGameCard.phase].pill, PAGE_DARKEN) : INK;
 
   const holdButton = (label: string) => (
     <ActionRow
