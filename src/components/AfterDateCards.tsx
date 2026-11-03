@@ -28,19 +28,17 @@ interface Phase {
   pillDot: string;
   /** Fill of a picked smiley or chip; light enough for ink on it */
   face: string;
-  /** The question's colour on the white card: the round's colour, deep enough to read */
-  text: string;
   /** Page background: the round's colour at shade 900 */
   page: string;
 }
 
 const PHASES: Phase[] = [
-  { title: "Ankommen", pill: "#FF4D00", pillDot: INK, face: "#FFB28F", text: "#E64500", page: "#7C2D12" },
-  { title: "Erzählen", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF", text: "#9A1FE0", page: "#581C87" },
-  { title: "Fühlen", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF", text: "#0082C4", page: "#0C4A6E" },
-  { title: "Sicherheit", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400", text: "#9C7A00", page: "#713F12" },
-  { title: "Absprachen", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D", text: "#0B7A35", page: "#14532D" },
-  { title: "Nähe", pill: "#FF6BEF", pillDot: INK, face: "#FFC2F7", text: "#C92FB6", page: "#701A75" },
+  { title: "Ankommen", pill: "#FF4D00", pillDot: INK, face: "#FFB28F", page: "#7C2D12" },
+  { title: "Erzählen", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF", page: "#581C87" },
+  { title: "Fühlen", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF", page: "#0C4A6E" },
+  { title: "Sicherheit", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400", page: "#713F12" },
+  { title: "Absprachen", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D", page: "#14532D" },
+  { title: "Nähe", pill: "#FF6BEF", pillDot: INK, face: "#FFC2F7", page: "#701A75" },
 ];
 
 /** Who answers a card: the person who had the date, the other one, or both. */
@@ -639,14 +637,15 @@ const AfterDateCards: React.FC = () => {
   );
 
   /** A CTA that opens its advice inline on the card, like the rules notes. */
-  const renderAdvice = (key: string, label: string, icon: React.ReactNode, accent: string, body: React.ReactNode) => {
+  // `tile` colours the CTA's icon tile, `accent` the opened box.
+  const renderAdvice = (key: string, label: string, icon: React.ReactNode, accent: string, body: React.ReactNode, tile = accent) => {
     const open = !!adviceOpen[key];
     return (
       <div className="w-full flex flex-col gap-3">
         <ActionRow
           iconNode={icon}
           label={open ? "Schließen" : label}
-          accent={accent}
+          accent={tile}
           fieldBg={GREY_FIELD}
           onClick={() => setAdviceOpen((prev) => ({ ...prev, [key]: !open }))}
         />
@@ -693,8 +692,8 @@ const AfterDateCards: React.FC = () => {
         <ActionRow
           icon="IconPencil"
           label={p?.status === "done" ? "Nochmal anders sagen" : "Hilf mir, es zu sagen"}
-          accent={PHASES[card.phase].face}
-          iconColor={INK}
+          accent={PHASES[card.phase].pill}
+          iconColor={inkOn(PHASES[card.phase].pill)}
           fieldBg={GREY_FIELD}
           onClick={() => askPhrasing(card)}
         />
@@ -719,9 +718,9 @@ const AfterDateCards: React.FC = () => {
     );
   };
 
-  /** Whose field it is on cards for both: the setup slide's label tag, in the round's full colour. */
+  /** Whose field it is on cards for both: the setup slide's label tag, in the colour of the round pill's dot. */
   const nameTag = (card: GameCard, i: 0 | 1, htmlFor?: string) => {
-    const bg = PHASES[card.phase].pill;
+    const bg = PHASES[card.phase].pillDot;
     const Tag = htmlFor ? "label" : "span";
     return (
       <Tag
@@ -790,7 +789,7 @@ const AfterDateCards: React.FC = () => {
         icon={rulesOpen ? "IconClear" : "IconPencil"}
         label={label}
         accent={accent}
-        iconColor={INK}
+        iconColor={inkOn(accent)}
         fieldBg={GREY_FIELD}
         onClick={() => {
           if (!rulesOpen) loadSharedRules();
@@ -877,7 +876,7 @@ const AfterDateCards: React.FC = () => {
       return (
         <div className="flex flex-col justify-start items-start w-full gap-6">
           <h2 id="who-heading" className="question-font retro-heading card-question w-full" lang="de">
-            <RevealText text="Wer macht mit?" color={PINK} slideIndex={index} />
+            <RevealText text="Wer macht mit?" color={INK} slideIndex={index} />
           </h2>
 
           {/* Each person: label tag, field, then the "had the date" toggle; one person always has it. */}
@@ -911,9 +910,9 @@ const AfterDateCards: React.FC = () => {
                   />
                   <ActionRow
                     className="mt-2"
-                    iconNode={<Heart size={16} strokeWidth={1.5} color={INK} fill={hadDate ? INK : "none"} />}
+                    iconNode={<Heart size={16} strokeWidth={1.5} color={hadDate ? "#FF4D00" : INK} fill={hadDate ? "#FF4D00" : "none"} />}
                     label={hadDate ? "Hatte das Date" : "Hatte das Date?"}
-                    accent={hadDate ? PINK : "#FBE3FF"}
+                    accent={hadDate ? "#FF6BEF" : "#FBE3FF"}
                     fieldBg={GREY_FIELD}
                     onClick={() => setPeople((p) => ({ ...p, dateIdx: i }))}
                   />
@@ -942,7 +941,7 @@ const AfterDateCards: React.FC = () => {
       <div className="flex flex-1 flex-col items-start w-full gap-5">
         {!(card.rules && rulesOpen) && (
           <h2 className="question-font retro-heading card-question w-full" lang="de">
-            <RevealText text={card.question} color={PHASES[card.phase].text} slideIndex={index} />
+            <RevealText text={card.question} color={INK} slideIndex={index} />
           </h2>
         )}
         {card.showWishesFrom && (
@@ -951,16 +950,17 @@ const AfterDateCards: React.FC = () => {
           </p>
         )}
         {!card.rules && players.map((i) => renderPlayer(card, i))}
-        {card.rules && renderRules(PHASES[card.phase].face)}
+        {card.rules && renderRules(PHASES[card.phase].pill)}
         {card.tip &&
           renderAdvice(
             `tip-${card.id}`,
             card.tip.title,
-            <MessageCircleQuestion size={16} strokeWidth={1.5} color={INK} />,
+            <MessageCircleQuestion size={16} strokeWidth={1.5} color={inkOn(PHASES[card.phase].pill)} />,
             PHASES[card.phase].face,
             card.tip.lines.map((line) => (
               <p key={line} className="retro-body-copy">{line}</p>
-            ))
+            )),
+            PHASES[card.phase].pill
           )}
         {card.phrase && renderPhrasing(card)}
         {renderGuidance(card)}
@@ -1077,7 +1077,7 @@ const AfterDateCards: React.FC = () => {
             <div className="w-full max-w-[500px] flex-1 max-h-[660px] flex flex-col items-center justify-center gap-8 p-[28px] shadow-2xl" style={{ backgroundColor: "#FFFFFF" }}>
               <HugIllustration />
               <h2 className="question-font retro-heading w-full text-center" lang="en">
-                <RevealText text={HOLD_QUESTION} color="#FF4D00" startDelay={120} />
+                <RevealText text={HOLD_QUESTION} color={INK} startDelay={120} />
               </h2>
             </div>
             <div className="absolute bottom-0 left-0 right-0 flex justify-center px-6 pb-6">
