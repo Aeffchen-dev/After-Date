@@ -61,6 +61,8 @@ interface GameCard {
   chips?: string[];
   /** Placeholder of the text field; no field without it */
   text?: string;
+  /** Several text fields instead of one, each with its own prompt as placeholder */
+  prompts?: string[];
   /** Offers "Hilf mir, es zu sagen": the AI turns notes into words to say out loud */
   phrase?: boolean;
   /** Shows what the listener picked on that card, so the teller knows what to cover */
@@ -98,13 +100,13 @@ const GAME_CARDS: GameCard[] = [
     who: "date",
     question: "Erzähl von deinem Date",
     showWishesFrom: "howmuch",
-    // Four prompts in the empty field, a blank line apart, to guide the telling.
-    text: [
+    // One field per prompt, to guide the telling.
+    prompts: [
       "Mit wem hast du dich getroffen und wie kam es dazu?",
       "Wie habt ihr eure Zeit verbracht und wie hast du das Date erlebt?",
       "Gab es körperliche oder emotionale Nähe, über die wir sprechen sollten?",
       "Gibt es etwas Wichtiges, das du mir noch erzählen möchtest?",
-    ].join("\n\n"),
+    ],
     phrase: true,
   },
   {
@@ -274,6 +276,8 @@ interface PersonAnswer {
   mood: number | null;
   chips: string[];
   text: string;
+  /** Answers to a card's `prompts`, one per field */
+  texts?: string[];
   passed: boolean;
 }
 
@@ -296,10 +300,19 @@ const fieldCls =
   "retro-input retro-input-dark-text w-full rounded-none border-0 px-3 outline-none ring-0 focus:outline-none focus:ring-0 active:outline-none [-webkit-tap-highlight-color:transparent]";
 
 /** A person has answered a card when they passed, or filled what the card asks for. */
+/** Everything a person wrote on a card; on a card with prompts each answer follows its prompt. */
+const answerText = (card: GameCard, a: PersonAnswer) =>
+  card.prompts
+    ? card.prompts
+        .map((q, k) => (a.texts?.[k]?.trim() ? `${q} ${a.texts[k].trim()}` : ""))
+        .filter(Boolean)
+        .join("\n")
+    : a.text.trim();
+
 const isAnswered = (card: GameCard, a: PersonAnswer) => {
   // The rules card sends nothing to the AI.
   if (card.rules) return false;
-  if (a.text.trim()) return true;
+  if (answerText(card, a)) return true;
   // A scale card is answered once a face is picked; chips next to it stay optional.
   if (card.scale) return a.mood !== null;
   return !!card.chips && a.chips.length > 0;
@@ -481,7 +494,7 @@ const AfterDateCards: React.FC = () => {
     role: roleOf(i),
     ...(card.scale && a.mood !== null ? { mood: a.mood } : {}),
     ...(card.chips ? { chips: a.chips } : {}),
-    ...(card.text ? { text: a.text.trim() } : {}),
+    ...(card.text || card.prompts ? { text: answerText(card, a) } : {}),
     passed: a.passed,
   });
 
@@ -534,7 +547,8 @@ const AfterDateCards: React.FC = () => {
 
   const askPhrasing = (card: GameCard) => {
     const i = people.dateIdx;
-    const notes = answers[card.id]?.[i]?.text.trim() ?? "";
+    const own = answers[card.id]?.[i];
+    const notes = own ? answerText(card, own) : "";
     const feelings = answers["checkin-safe"]?.[listenerIdx];
     const context = [
       feelings && feelings.chips.length ? `${nameOf(listenerIdx)} fühlt gerade: ${feelings.chips.join(", ")}.` : "",
@@ -674,7 +688,8 @@ const AfterDateCards: React.FC = () => {
 
   const renderPhrasing = (card: GameCard) => {
     const p = phrasing[card.id];
-    const notes = answers[card.id]?.[people.dateIdx]?.text.trim() ?? "";
+    const own = answers[card.id]?.[people.dateIdx];
+    const notes = own ? answerText(card, own) : "";
     return (
       <div className="w-full flex flex-col gap-3">
         <ActionRow
@@ -757,11 +772,31 @@ const AfterDateCards: React.FC = () => {
                   value={a.text}
                   onChange={(e) => updateAnswer(card.id, i, { text: e.target.value })}
                   placeholder={card.text}
-                  aria-label={showName ? undefined : card.text.split("\n")[0].replace(/\s*…$/, "")}
+                  aria-label={showName ? undefined : card.text.replace(/\s*…$/, "")}
                   rows={2}
                   className={`${fieldCls} py-2 flex-1 min-h-[64px] resize-none`}
                   style={{ background: GREY_FIELD }}
                 />
+              </div>
+            )}
+            {card.prompts && (
+              <div className="w-full flex flex-1 flex-col gap-2">
+                {card.prompts.map((prompt, k) => (
+                  <textarea
+                    key={prompt}
+                    value={a.texts?.[k] ?? ""}
+                    onChange={(e) => {
+                      const texts = card.prompts!.map((_, n) => a.texts?.[n] ?? "");
+                      texts[k] = e.target.value;
+                      updateAnswer(card.id, i, { texts });
+                    }}
+                    placeholder={prompt}
+                    aria-label={prompt}
+                    rows={2}
+                    className={`${fieldCls} py-2 flex-1 min-h-[64px] resize-none`}
+                    style={{ background: GREY_FIELD }}
+                  />
+                ))}
               </div>
             )}
           </>
