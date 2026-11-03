@@ -41,6 +41,7 @@ const PHASES: Phase[] = [
   { title: "Fühlen", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF", page: "#082F49" },
   { title: "Sicherheit", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400", tag: "#FFD400", page: "#422006" },
   { title: "Absprachen", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D", page: "#052E16" },
+  { title: "Lernen", pill: "#14B8A6", pillDot: INK, face: "#99F6E4", page: "#042F2E", tag: "#14B8A6" },
   { title: "Nähe", pill: PINK, pillDot: INK, face: "#FFC2F7", tag: PINK, page: "#4A044E" },
 ];
 
@@ -159,7 +160,6 @@ const GAME_CARDS: GameCard[] = [
       { q: "Gibt es etwas Wichtiges, das du mir noch erzählen möchtest?" },
     ],
   },
-  // 3. Fühlen: was es auslöst und was dahinter steckt
   {
     id: "date-liked",
     phase: 1,
@@ -189,6 +189,7 @@ const GAME_CARDS: GameCard[] = [
       return wishes.length === 0 || wishes.includes(TOPIC_AGAIN);
     },
   },
+  // 3. Fühlen: was es auslöst und was dahinter steckt
   {
     id: "feel-trigger",
     phase: 2,
@@ -276,22 +277,6 @@ const GAME_CARDS: GameCard[] = [
     text: "Was dir gefehlt hat oder gutgetan hat …",
   },
   {
-    // One shared look back at how the two of them handled it.
-    id: "us-worked",
-    phase: 3,
-    who: "together",
-    question: "Was hat in unserem Umgang damit gut funktioniert?",
-    chips: [
-      "Unsere Ehrlichkeit",
-      "Unser gegenseitiges Vertrauen",
-      "Dass wir Gefühle zugelassen haben",
-      "Dass niemand sich rechtfertigen musste",
-      "Dass wir aufeinander eingegangen sind",
-      "Das fällt mir gerade schwer zu sagen",
-    ],
-    text: "Eigene Gedanken …",
-  },
-  {
     id: "us-special",
     phase: 3,
     who: "both",
@@ -299,21 +284,6 @@ const GAME_CARDS: GameCard[] = [
     text: "Was nur wir haben …",
   },
   // 5. Absprachen: was ihr euch wünscht und was gilt
-  {
-    id: "us-next",
-    phase: 4,
-    who: "listener",
-    question: "Was würdest du dir beim nächsten Date anders wünschen?",
-    chips: [
-      "Früher informiert werden",
-      "Mehr oder weniger Details",
-      "Einen Check-in danach",
-      "Mehr gemeinsame Zeit davor oder danach",
-      "Klarere Grenzen",
-      "Nichts, es war gut so",
-    ],
-    text: "Eigene Gedanken …",
-  },
   {
     // One shared answer; the couple's rules open from this card.
     id: "us-agreements",
@@ -330,38 +300,72 @@ const GAME_CARDS: GameCard[] = [
     text: "Eigene Gedanken …",
     rules: true,
   },
-  // 6. Nähe: zurück zueinander
+  // 6. Lernen: was sich verändert hat, was gut lief, was wir beim nächsten Mal anders machen
+  {
+    id: "us-changed",
+    phase: 5,
+    who: "listener",
+    question: "Hat sich etwas zwischen uns verändert?",
+    scale: true,
+    scaleLabels: ["Sehr verändert", "Spürbar", "Ein bisschen", "Kaum", "Alles wie vorher"],
+    text: "Was genau …",
+  },
+  {
+    // One shared look back at how the two of them handled it.
+    id: "us-worked",
+    phase: 5,
+    who: "together",
+    question: "Was hat in unserem Umgang damit gut funktioniert?",
+    chips: [
+      "Unsere Ehrlichkeit",
+      "Unser gegenseitiges Vertrauen",
+      "Dass wir Gefühle zugelassen haben",
+      "Dass niemand sich rechtfertigen musste",
+      "Dass wir aufeinander eingegangen sind",
+      "Das fällt mir gerade schwer zu sagen",
+    ],
+    text: "Eigene Gedanken …",
+  },
+  {
+    id: "us-next",
+    phase: 5,
+    who: "listener",
+    question: "Was würdest du dir beim nächsten Date anders wünschen?",
+    chips: [
+      "Früher informiert werden",
+      "Mehr Details",
+      "Weniger Details",
+      "Einen Check-in danach",
+      "Mehr gemeinsame Zeit davor oder danach",
+      "Klarere Grenzen",
+      "Mehr Rücksicht auf meine Gefühle",
+      "Spontaner sein dürfen",
+      "Nichts, es war gut so",
+    ],
+    text: "Eigene Gedanken …",
+  },
+  // 7. Nähe: zurück zueinander
   {
     id: "rc-appreciate",
-    phase: 5,
+    phase: 6,
     who: "both",
     question: "Was schätzt du gerade an uns?",
     text: "An uns schätze ich …",
   },
   {
     id: "rc-unsaid",
-    phase: 5,
+    phase: 6,
     who: "both",
     question: "Was ist bisher zu kurz gekommen?",
     text: "Ich wollte dir noch sagen …",
   },
   {
     id: "rc-close",
-    phase: 5,
+    phase: 6,
     who: "together",
     question: "Wie kommen wir uns jetzt nah?",
     chips: ["Umarmen", "Kuscheln", "Zusammen einschlafen", "Reden", "Lachen", "Spaziergang", "Me Time"],
     text: "Was wir als Erstes machen …",
-  },
-  // Last: a look at the two of them, after the closeness (still a Fühlen question).
-  {
-    id: "us-changed",
-    phase: 2,
-    who: "listener",
-    question: "Hat sich etwas zwischen uns verändert?",
-    scale: true,
-    scaleLabels: ["Sehr verändert", "Spürbar", "Ein bisschen", "Kaum", "Alles wie vorher"],
-    text: "Was genau …",
   },
 ];
 

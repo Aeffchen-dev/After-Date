@@ -8,7 +8,7 @@ Live: https://aeffchen-dev.github.io/After-Date/
 
 ## How it works
 
-Six rounds (Ankommen, Erzählen, Fühlen, Sicherheit, Absprachen, Nähe), one question per card. Cards ask for a smiley (1–5, with end words per card), answer chips and/or a few words. The listener picks how much they want to know, and the teller sees it. Once a card is answered, the app sends that card's answers to a small Cloudflare Worker (`worker/`), which asks Claude for a short, warm impulse: a reflection, one follow-up question, and a nudge towards the hold card when it gets heavy. Answers stay in the browser for 8 hours; the Worker stores only the couple's rules (see below).
+Seven rounds (Ankommen, Erzählen, Fühlen, Sicherheit, Absprachen, Lernen, Nähe), one question per card. Cards ask for a smiley (1–5, with end words per card), answer chips and/or a few words. The listener picks how much they want to know, and the teller sees it. Once a card is answered, the app sends that card's answers to a small Cloudflare Worker (`worker/`), which asks Claude for a short, warm impulse: a reflection, one follow-up question, and a nudge towards the hold card when it gets heavy. Answers stay in the browser for 8 hours; the Worker stores only the couple's rules (see below).
 
 ## Edit the cards
 
