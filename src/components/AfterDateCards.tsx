@@ -319,7 +319,7 @@ const GAME_CARDS: GameCard[] = [
     id: "us-agreements",
     phase: 4,
     who: "together",
-    question: "Gab es etwas, das unsere Vereinbarungen berührt oder verändert?",
+    question: "Gab es etwas, das unsere Regeln berührt oder verändert?",
     chips: [
       "Nein, alles war im Rahmen",
       "Eine Grenze war unklar",
