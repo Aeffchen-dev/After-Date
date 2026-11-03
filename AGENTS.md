@@ -4,4 +4,4 @@
 - The site is served from `/After-Date/` on GitHub Pages: keep `base` in `vite.config.ts`, the router `basename` and `pathSegmentsToKeep` in `public/404.html` in step.
 - Guidance runs only through the Worker in `worker/`; the API key never goes into the site. The page sends one card's answers once everyone whose turn it is has answered.
 - Keep the request shape in `src/lib/guidance.ts` and `parseRequest` in `worker/src/index.ts` in step.
-- Big text (title, questions) is set in Kokoro, the display face of the sibling Retro Cards app; keep it on the shared `#root .question-font` rule.
+- Big text (questions) is set in Kokoro, the display face of the sibling Retro Cards app; keep it on the shared `#root .question-font` rule. The title slide's "After Date" is the exception: Stack Sans Notch, via `.title-notch`.

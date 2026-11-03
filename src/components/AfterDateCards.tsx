@@ -1034,7 +1034,7 @@ const AfterDateCards: React.FC = () => {
       return (
         <div className="relative flex flex-col items-center w-full h-full text-center" style={{ paddingTop: "24%" }}>
           <h1
-            className="retro-title logo-slide-anim logo-glitch"
+            className="retro-title title-notch logo-slide-anim logo-glitch"
             data-text="After Date"
             style={{ fontSize: "84px", lineHeight: 0.86, fontWeight: 500, color: "#3A3A3A" }}
           >

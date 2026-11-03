@@ -1872,6 +1872,16 @@ textarea.bg-retro-post-it:focus,
   letter-spacing: 0;
 }
 
+/* The title slide's "After Date" keeps the app's own display face, Stack Sans Notch. */
+#root .retro-title.title-notch,
+#root .retro-title.title-notch * {
+  font-family: "Stack Sans Notch", "Stack Sans Notch Local", "Stack Sans Text", "Figtree", Arial, sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  font-feature-settings: "ss02";
+  letter-spacing: -0.02em;
+}
+
 
 /* Word-by-word reveal for the random question headline */
 @keyframes question-word-enter {
