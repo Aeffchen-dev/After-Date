@@ -856,7 +856,7 @@ const AfterDateCards: React.FC = () => {
 
     if (slideId === SLIDE_INTRO) {
       return (
-        <div className="flex flex-col justify-start items-start w-full gap-6">
+        <div className="flex flex-1 flex-col justify-start items-start w-full gap-6">
           <h2 id="who-heading" className="question-font retro-heading card-question w-full" lang="de">
             <RevealText text="Wer macht mit?" color={INK} slideIndex={index} />
           </h2>
@@ -908,7 +908,7 @@ const AfterDateCards: React.FC = () => {
             label="Los geht's"
             accent={PINK}
             fieldBg={GREY_FIELD}
-            className="mt-6"
+            className="mt-auto"
             onClick={() => swiperRef?.slideNext()}
           />
 
