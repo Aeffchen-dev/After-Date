@@ -131,7 +131,8 @@ const GAME_CARDS: GameCard[] = [
     phase: 2,
     who: "listener",
     question: "Kannst du dich für mich freuen?",
-    chips: ["Ja, von Herzen", "Ein bisschen", "Gerade noch nicht"],
+    scale: true,
+    scaleLabels: ["Gerade nicht", "Kaum", "Ein bisschen", "Ziemlich", "Von Herzen"],
     text: "Was gerade im Weg steht …",
   },
   {
@@ -139,7 +140,8 @@ const GAME_CARDS: GameCard[] = [
     phase: 2,
     who: "listener",
     question: "Hat sich etwas zwischen uns verändert?",
-    chips: ["Nein, alles wie vorher", "Ein bisschen", "Ja, spürbar", "Weiß ich noch nicht"],
+    scale: true,
+    scaleLabels: ["Sehr verändert", "Spürbar", "Ein bisschen", "Kaum", "Alles wie vorher"],
     text: "Was genau …",
   },
   // 4. Sicherheit: was trägt
