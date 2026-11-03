@@ -286,6 +286,21 @@ const GAME_CARDS: GameCard[] = [
   },
   // 5. Absprachen: was ihr euch wünscht und was gilt
   {
+    id: "us-next",
+    phase: 4,
+    who: "listener",
+    question: "Was würdest du dir beim nächsten Date anders wünschen?",
+    chips: [
+      "Früher informiert werden",
+      "Mehr oder weniger Details",
+      "Einen Check-in danach",
+      "Mehr gemeinsame Zeit davor oder danach",
+      "Klarere Grenzen",
+      "Nichts, es war gut so",
+    ],
+    text: "Eigene Gedanken …",
+  },
+  {
     // One shared answer; the couple's rules open from this card.
     id: "us-agreements",
     phase: 4,
