@@ -1898,20 +1898,6 @@ textarea.bg-retro-post-it:focus,
 
 
 
-/* Subtle ambient drift for the background graphic */
-@keyframes bgDrift {
-  0%   { transform: scale(1.06) translate3d(0, 0, 0) rotate(0deg); }
-  33%  { transform: scale(1.08) translate3d(-1.2%, -1%, 0) rotate(0.4deg); }
-  66%  { transform: scale(1.07) translate3d(1%, 1.2%, 0) rotate(-0.3deg); }
-  100% { transform: scale(1.06) translate3d(0, 0, 0) rotate(0deg); }
-}
-.bg-graphic-animated {
-  animation: bgDrift 38s ease-in-out infinite;
-  will-change: transform;
-}
-@media (prefers-reduced-motion: reduce) {
-  .bg-graphic-animated { animation: none; }
-}
 
 /* Questions slide: same headline size as all other slides */
 

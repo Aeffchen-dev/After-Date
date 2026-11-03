@@ -280,10 +280,12 @@ const fieldCls =
 
 /** A person has answered a card when they passed, or filled what the card asks for. */
 const isAnswered = (card: GameCard, a: PersonAnswer) => {
-  if (a.passed || a.text.trim()) return true;
-  // A text-only card waits for words; otherwise every face and chip row needs a pick.
-  if (!card.scale && !card.chips) return false;
-  return (!card.scale || a.mood !== null) && (!card.chips || a.chips.length > 0);
+  // The rules card sends nothing to the AI.
+  if (card.rules) return false;
+  if (a.text.trim()) return true;
+  // A scale card is answered once a face is picked; chips next to it stay optional.
+  if (card.scale) return a.mood !== null;
+  return !!card.chips && a.chips.length > 0;
 };
 
 /** Two figures holding each other: the hold card's picture. */
@@ -313,7 +315,7 @@ const AfterDateCards: React.FC = () => {
   const [rules, setRules] = useState<string[]>(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(RULES_KEY) ?? "null");
-      return Array.isArray(saved) ? saved : DEFAULT_RULES;
+      return Array.isArray(saved) ? saved.filter((r): r is string => typeof r === "string") : DEFAULT_RULES;
     } catch {
       return DEFAULT_RULES;
     }
@@ -325,7 +327,13 @@ const AfterDateCards: React.FC = () => {
     () => loadFromStorage<People>(STORAGE_KEYS.PEOPLE) ?? { names: ["", ""], dateIdx: 0 }
   );
   const [answers, setAnswers] = useState<Record<string, CardAnswers>>(
-    () => loadFromStorage<Record<string, CardAnswers>>(STORAGE_KEYS.ANSWERS) ?? {}
+    () => {
+      // Passing is gone from the UI; drop old passes so they cannot be sent or stick.
+      const saved = loadFromStorage<Record<string, CardAnswers>>(STORAGE_KEYS.ANSWERS) ?? {};
+      return Object.fromEntries(
+        Object.entries(saved).map(([id, pair]) => [id, pair.map((a) => ({ ...a, passed: false })) as CardAnswers])
+      );
+    }
   );
   const [guidance, setGuidance] = useState<Record<string, GuidanceState>>({});
   // "Hilf mir, es zu sagen" results, keyed by card id; asked on tap only.
@@ -389,7 +397,7 @@ const AfterDateCards: React.FC = () => {
   useEffect(() => {
     if (!guidanceEnabled()) return;
     GAME_CARDS.forEach((card) => {
-      // Notes on the "date-share" card are a draft for the teller, not yet said; it gets wording help instead.
+      // Notes on the "date-how" card are a draft for the teller, not yet said; it gets wording help instead.
       if (card.phrase) return;
       const a = answers[card.id];
       const players = playersOf(card);
@@ -609,7 +617,7 @@ const AfterDateCards: React.FC = () => {
             {nameOf(i)} <span className="opacity-60">· {roleOf(i) === "date" ? "hatte das Date" : "hört zu"}</span>
           </span>
         )}
-        {(
+        {
           <>
             {card.scale && (
               <SmileyScale
@@ -641,7 +649,7 @@ const AfterDateCards: React.FC = () => {
               />
             )}
           </>
-        )}
+        }
       </div>
     );
   };
@@ -724,40 +732,60 @@ const AfterDateCards: React.FC = () => {
     if (slideId === SLIDE_INTRO) {
       return (
         <div className="flex flex-col justify-start items-start w-full gap-6">
-          <h2 className="question-font retro-heading w-full" lang="de">
-            <RevealText text="Wer spielt?" color={PINK} slideIndex={index} />
+          <h2 id="who-heading" className="question-font retro-heading w-full" lang="de">
+            <RevealText text="Wer macht mit?" color={PINK} slideIndex={index} />
           </h2>
 
-          <fieldset className="w-full flex flex-col gap-3 border-0 p-0 m-0">
-            {([0, 1] as const).map((i) => (
-              <div key={i} className="flex w-full items-stretch gap-0">
-                <input
-                  type="text"
-                  value={people.names[i]}
-                  onChange={(e) =>
-                    setPeople((p) => {
-                      const names = [...p.names] as People["names"];
-                      names[i] = e.target.value;
-                      return { ...p, names };
-                    })
-                  }
-                  placeholder={i === 0 ? "Dein Name" : "Name deines Gegenübers"}
-                  aria-label={i === 0 ? "Dein Name" : "Name deines Gegenübers"}
-                  className={`${fieldCls} name-input-field h-10`}
-                  style={{ background: GREY_FIELD }}
-                />
-                <button
-                  type="button"
-                  aria-pressed={people.dateIdx === i}
-                  onClick={() => setPeople((p) => ({ ...p, dateIdx: i }))}
-                  className="swiper-no-swiping retro-body-copy-sm shrink-0 h-10 px-3 border-0 rounded-none whitespace-nowrap"
-                  style={{ background: people.dateIdx === i ? PINK : "#FFFFFF", color: INK, boxShadow: `inset 0 0 0 1px ${GREY_FIELD}` }}
-                >
-                  {people.dateIdx === i ? "hatte das Date" : "hört zu"}
-                </button>
-              </div>
-            ))}
+          {/* Each person: label tag, field, then the "had the date" toggle; one person always has it. */}
+          <fieldset aria-labelledby="who-heading" className="w-full flex flex-col gap-10 border-0 p-0 m-0">
+            {([0, 1] as const).map((i) => {
+              const label = i === 0 ? "Dein Name" : "Name deines Gegenübers";
+              const hadDate = people.dateIdx === i;
+              return (
+                <div key={i} className="flex w-full flex-col items-start gap-0">
+                  <label
+                    htmlFor={`name-${i}`}
+                    className="retro-body-copy inline-flex h-8 items-center px-3"
+                    style={{ background: PINK, color: INK }}
+                  >
+                    {label}
+                  </label>
+                  <input
+                    id={`name-${i}`}
+                    type="text"
+                    value={people.names[i]}
+                    onChange={(e) =>
+                      setPeople((p) => {
+                        const names = [...p.names] as People["names"];
+                        names[i] = e.target.value;
+                        return { ...p, names };
+                      })
+                    }
+                    placeholder="Deine Antwort"
+                    className={`${fieldCls} name-input-field h-10`}
+                    style={{ background: GREY_FIELD }}
+                  />
+                  <ActionRow
+                    className="mt-2"
+                    iconNode={<Heart size={16} strokeWidth={1.5} color={INK} fill={hadDate ? INK : "none"} />}
+                    label={hadDate ? "Hatte das Date" : "Hatte das Date?"}
+                    accent={hadDate ? PINK : "#FBE3FF"}
+                    fieldBg={GREY_FIELD}
+                    onClick={() => setPeople((p) => ({ ...p, dateIdx: i }))}
+                  />
+                </div>
+              );
+            })}
           </fieldset>
+
+          <ActionRow
+            icon="IconArrowRight"
+            label="Los geht's"
+            accent="#FF6BEF"
+            fieldBg={GREY_FIELD}
+            className="mt-6"
+            onClick={() => swiperRef?.slideNext()}
+          />
 
         </div>
       );

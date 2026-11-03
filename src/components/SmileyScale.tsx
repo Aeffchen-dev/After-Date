@@ -55,7 +55,7 @@ const SmileyScale: React.FC<SmileyScaleProps> = ({ value, onChange, accent, ends
               type="button"
               role="radio"
               aria-checked={selected}
-              aria-label={moodLabel}
+              aria-label={ends && level === 1 ? ends[0] : ends && level === 5 ? ends[1] : moodLabel}
               tabIndex={selected || (value === null && level === 3) ? 0 : -1}
               onClick={() => onChange(level)}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-1 transition-transform hover:scale-110"
