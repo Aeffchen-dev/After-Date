@@ -31,11 +31,11 @@ interface Phase {
 }
 
 const PHASES: Phase[] = [
-  { title: "Ankommen", pill: "#FF4D00", pillDot: INK, face: "#FFB28F" },
-  { title: "Sag es", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF" },
-  { title: "Erzähl mir", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF" },
-  { title: "Das Schwierige", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D" },
-  { title: "Wir", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400" },
+  { title: "Check-in", pill: "#FF4D00", pillDot: INK, face: "#FFB28F" },
+  { title: "Das Date", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF" },
+  { title: "Gefühle", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF" },
+  { title: "Wir beide", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D" },
+  { title: "Reconnect", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400" },
 ];
 
 /** Who answers a card: the person who had the date, the other one, or both. */
@@ -48,6 +48,8 @@ interface GameCard {
   question: string;
   /** Quiet line under the question: how to play this card */
   hint?: string;
+  /** A "Gesprächsimpuls": a way of saying it, shown in a box */
+  tip?: string;
   scale?: boolean;
   chips?: string[];
   /** Placeholder of the text field; no field without it */
@@ -61,123 +63,201 @@ interface GameCard {
 }
 
 const NOTHING_YET = "Lieber erst mal nichts";
-const FEELINGS = ["Eifersucht", "Unsicherheit", "Angst", "Neugier", "Freude für dich", "Erleichterung", "Gelassenheit"];
+const FEELINGS = ["Freude", "Neugier", "Aufregung", "Unsicherheit", "Eifersucht", "Angst", "Gelassenheit"];
 
+// One question per card. Cards for both people carry one kind of input, so two answers still fit.
 const GAME_CARDS: GameCard[] = [
+  // 1. Check-in – Wie geht es uns gerade?
   {
-    id: "arrive",
+    id: "checkin-feel",
     phase: 0,
     who: "both",
-    question: "Wie fühlst du dich gerade, wenn du daran denkst, dass wir gleich über ein Date sprechen?",
-    scale: true,
-    chips: ["Vorfreude", "Neugier", "Nervosität", "Unsicherheit", "Eifersucht", "Angst", "Gelassenheit"],
+    question: "Wie fühlst du dich gerade, wenn du an das Date denkst?",
+    hint: "Wählt, was gerade besonders präsent ist.",
+    chips: ["Freude", "Neugier", "Aufregung", "Unsicherheit", "Eifersucht"],
   },
   {
-    id: "safe",
+    id: "checkin-need",
     phase: 0,
     who: "both",
-    question: "Was brauchst du, damit du heute offen sein kannst?",
-    chips: ["Zeit", "Nähe", "Ehrlichkeit", "Pausen", "Humor", "Nicht zu viele Details"],
-    text: "Oder in deinen Worten …",
+    question: "Was brauchst du gerade von mir, damit wir offen darüber sprechen können?",
+    chips: ["Nähe", "Ehrlichkeit", "Geduld", "Pausen", "Wenig Details"],
   },
   {
-    id: "say",
-    phase: 1,
-    who: "date",
-    question: "Ich hatte ein Date und möchte dir davon erzählen.",
-    hint: "Lies den Satz laut vor. Wenn dir die Worte fehlen, schreib Stichworte auf und lass dir beim Formulieren helfen.",
-    text: "Was möchtest du sagen? Stichworte reichen.",
-    phrase: true,
-  },
-  {
-    id: "hear",
-    phase: 1,
-    who: "listener",
-    question: "Was löst das gerade in dir aus?",
-    hint: "Alles darf da sein. Du musst es nicht erklären.",
+    id: "checkin-safe",
+    phase: 0,
+    who: "both",
+    question: "Wie sicher und verbunden fühlst du dich gerade?",
     scale: true,
-    chips: FEELINGS,
-    text: "Wenn du magst, ein paar Worte dazu …",
   },
+  // 2. Das Date – Was möchtest du erzählen?
   {
     id: "howmuch",
     phase: 1,
     who: "listener",
-    question: "Wie viel möchtest du wissen?",
-    hint: "Du bestimmst das Tempo. Was du nicht auswählst, bleibt erst mal ungesagt.",
+    question: "Wie viel möchtest du hören?",
+    hint: "Du entscheidest mit, wie viele Details erzählt werden. Ehrlichkeit heißt nicht, jedes intime Detail erzählen zu müssen.",
     chips: ["Wie es dir ging", "Was ihr gemacht habt", "Wer die Person ist", "Ob ihr euch wiedersehen wollt", "Körperliches", NOTHING_YET],
   },
   {
-    id: "tell",
-    phase: 2,
+    id: "date-how",
+    phase: 1,
     who: "date",
-    question: "Erzähl mir von deinem Date.",
+    question: "Wie war dein Date für dich?",
+    hint: "Du erzählst, dein Gegenüber darf neugierig nachfragen.",
     showWishesFrom: "howmuch",
-    text: "Was du erzählt hast, in Stichworten …",
-  },
-  {
-    id: "listen",
-    phase: 2,
-    who: "listener",
-    question: "Was geht dir durch den Kopf, während du zuhörst?",
     scale: true,
-    text: "Gedanken, Fragen, Gefühle …",
   },
   {
-    id: "touched",
+    id: "date-liked",
+    phase: 1,
+    who: "date",
+    question: "Was hat dir besonders gefallen?",
+    text: "Stichworte reichen …",
+  },
+  {
+    id: "date-moved",
+    phase: 1,
+    who: "date",
+    question: "Gab es etwas, das dich überrascht oder bewegt hat?",
+    text: "Stichworte reichen …",
+  },
+  {
+    id: "date-closeness",
+    phase: 1,
+    who: "date",
+    question: "Wie hast du die Nähe oder Anziehung erlebt?",
+    showWishesFrom: "howmuch",
+    text: "Nur so viel, wie gewünscht …",
+  },
+  {
+    id: "date-share",
+    phase: 1,
+    who: "date",
+    question: "Gibt es etwas, das du gerne mit mir teilen möchtest?",
+    hint: "Wenn dir die Worte fehlen, schreib Stichworte auf und lass dir beim Formulieren helfen.",
+    text: "Was möchtest du sagen? Stichworte reichen.",
+    phrase: true,
+  },
+  // 3. Gefühle – Was löst das in uns aus?
+  {
+    id: "feel-trigger",
     phase: 2,
-    who: "date",
-    question: "Gab es etwas, das dich berührt hat, und etwas, das du dich kaum zu erzählen traust?",
-    hint: "Du darfst passen. Ehrlich sein heißt nicht, alles sagen zu müssen.",
-    text: "Was du teilen magst …",
-  },
-  {
-    id: "worries",
-    phase: 3,
     who: "listener",
-    question: "Welche Sorgen hast du gerade, obwohl du weißt, dass sie nicht stimmen müssen?",
-    text: "Zum Beispiel: Ich habe Angst, dass …",
+    question: "Was hat es in dir ausgelöst, mir zuzuhören?",
+    hint: "Jetzt bekommst du Raum. Alles darf da sein.",
+    scale: true,
+    chips: FEELINGS,
   },
   {
-    id: "answer",
-    phase: 3,
-    who: "date",
-    question: "Was möchtest du antworten, nachdem du das gehört hast?",
-    hint: "Nicht verteidigen oder erklären. Erst sagen, was du gehört hast, dann, was wahr ist für dich.",
-    text: "Ich habe gehört, dass … Und für mich ist wahr, dass …",
-  },
-  {
-    id: "need",
-    phase: 3,
+    id: "feel-hard",
+    phase: 2,
     who: "listener",
-    question: "Was würde dir jetzt helfen, dich geliebt, sicher und besonders zu fühlen?",
+    question: "Gab es einen Moment, der sich schwierig angefühlt hat?",
+    tip: "Statt „Du musst doch nicht eifersüchtig sein“ lieber: „Ich möchte verstehen, was sich für dich gerade schwierig anfühlt.“",
+    text: "Der Moment, als …",
+  },
+  {
+    id: "feel-fears",
+    phase: 2,
+    who: "listener",
+    question: "Welche Gedanken oder Ängste stecken hinter diesem Gefühl?",
+    text: "Ich habe Angst, dass …",
+  },
+  {
+    id: "feel-calm",
+    phase: 2,
+    who: "listener",
+    question: "Was beruhigt dich oder gibt dir Sicherheit?",
     chips: ["Eine Umarmung", "Hören, was ich dir bedeute", "Zeit nur für uns", "Ein Ritual nach Dates", "Mehr wissen", "Erst mal Ruhe"],
-    text: "Oder in deinen Worten …",
   },
   {
-    id: "us",
-    phase: 4,
-    who: "date",
-    question: "Was liebst du an uns, das keine andere Begegnung ersetzen kann?",
+    id: "feel-joy",
+    phase: 2,
+    who: "listener",
+    question: "Kannst du dich auch für mich freuen?",
+    hint: "Und wenn nicht: Was steht dem gerade im Weg?",
+    chips: ["Ja, von Herzen", "Ein bisschen", "Gerade noch nicht"],
+    text: "Was gerade im Weg steht …",
+  },
+  // 4. Wir beide – Was bedeutet das für unsere Beziehung?
+  {
+    id: "us-changed",
+    phase: 3,
+    who: "both",
+    question: "Hat das Date etwas an deinem Gefühl für unsere Beziehung verändert?",
+    chips: ["Nein, alles wie vorher", "Ein bisschen", "Ja, spürbar", "Weiß ich noch nicht"],
+  },
+  {
+    id: "us-loved",
+    phase: 3,
+    who: "listener",
+    question: "Hast du dich trotz des Dates geliebt und als wichtige Bezugsperson gefühlt?",
+    scale: true,
+  },
+  {
+    id: "us-special",
+    phase: 3,
+    who: "both",
+    question: "Was gibt dir das Gefühl, dass unsere Verbindung besonders und sicher ist?",
     text: "Was nur wir haben …",
   },
   {
-    id: "now",
+    id: "us-wish",
+    phase: 3,
+    who: "both",
+    question: "Gibt es etwas, das du dir künftig anders wünschen würdest?",
+    hint: "Sprecht über Bedürfnisse, ohne aus Angst neue Regeln zu erzwingen.",
+    text: "Ich wünsche mir …",
+  },
+  {
+    id: "us-right",
+    phase: 3,
+    who: "both",
+    question: "Fühlt sich unsere offene Beziehung für uns beide weiterhin richtig an?",
+    chips: ["Ja", "Ja, mit Änderungen", "Unsicher"],
+  },
+  // 5. Reconnect – Zurück zu uns
+  {
+    id: "rc-appreciate",
     phase: 4,
     who: "both",
-    question: "Worauf hast du jetzt mit mir Lust?",
-    chips: ["Kuscheln", "Küssen", "Reden", "Lachen", "Gemeinsam etwas unternehmen", "Einfach beieinander sein", "Zeit für mich"],
+    question: "Was schätzt du gerade besonders an uns?",
+    text: "An uns schätze ich …",
+  },
+  {
+    id: "rc-unsaid",
+    phase: 4,
+    who: "both",
+    question: "Was möchtest du mir sagen, das bisher zu kurz gekommen ist?",
+    text: "Ich wollte dir noch sagen …",
+  },
+  {
+    id: "rc-close",
+    phase: 4,
+    who: "both",
+    question: "Was können wir jetzt tun, damit wir uns wieder ganz nah fühlen?",
+    chips: ["Umarmen", "Kuscheln", "Zusammen einschlafen", "Reden", "Lachen"],
     showMatches: true,
   },
+];
+
+/** Drei Regeln für euer Gespräch: each is agreed with a tap before the cards start. */
+const RULES: { title: string; body: string }[] = [
+  { title: "Verstehen statt verteidigen.", body: "Gefühle müssen nicht logisch sein, um ernst genommen zu werden." },
+  { title: "Neugier statt Vergleich.", body: "Es geht nicht darum, wer besser, attraktiver oder aufregender ist." },
+  { title: "Verbindung statt Kontrolle.", body: "Sprecht über Bedürfnisse und Grenzen, ohne aus Angst neue Regeln zu erzwingen." },
 ];
 
 const HOLD_QUESTION = "Can we just hold each other for a moment?";
 const HOLD_HINT = "Manchmal braucht es keine weitere Frage, sondern erst einmal Nähe.";
 
-// Slide order: title, rules and names, then the game cards.
+// Slide order: title, goal and names, the three rules, the game cards, the closing card.
 const SLIDE_TITLE = "title";
 const SLIDE_INTRO = "intro";
-const SLIDES: string[] = [SLIDE_TITLE, SLIDE_INTRO, ...GAME_CARDS.map((c) => c.id)];
+const SLIDE_RULES = "rules";
+const SLIDE_END = "end";
+const SLIDES: string[] = [SLIDE_TITLE, SLIDE_INTRO, SLIDE_RULES, ...GAME_CARDS.map((c) => c.id), SLIDE_END];
 const CARD_BY_ID = Object.fromEntries(GAME_CARDS.map((c) => [c.id, c])) as Record<string, GameCard>;
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -226,6 +306,7 @@ const AfterDateCards: React.FC = () => {
   });
   const [swiperRef, setSwiperRef] = useState<SwiperType | null>(null);
   const [holdOpen, setHoldOpen] = useState(false);
+  const [rulesAgreed, setRulesAgreed] = useState<boolean[]>(() => RULES.map(() => false));
   const [viewportHeight, setViewportHeight] = useState(() =>
     typeof window !== "undefined" ? window.innerHeight : 767
   );
@@ -289,7 +370,7 @@ const AfterDateCards: React.FC = () => {
   useEffect(() => {
     if (!guidanceEnabled()) return;
     GAME_CARDS.forEach((card) => {
-      // Notes on the "Sag es" card are a draft for the teller, not yet said; it gets wording help instead.
+      // Notes on the "date-share" card are a draft for the teller, not yet said; it gets wording help instead.
       if (card.phrase) return;
       const a = answers[card.id];
       const players = playersOf(card);
@@ -335,12 +416,11 @@ const AfterDateCards: React.FC = () => {
   const askPhrasing = (card: GameCard) => {
     const i = people.dateIdx;
     const notes = answers[card.id]?.[i]?.text.trim() ?? "";
-    const feelings = answers.arrive?.[listenerIdx];
-    const needs = answers.safe?.[listenerIdx];
+    const feelings = answers["checkin-feel"]?.[listenerIdx];
+    const needs = answers["checkin-need"]?.[listenerIdx];
     const context = [
       feelings && feelings.chips.length ? `${nameOf(listenerIdx)} fühlt gerade: ${feelings.chips.join(", ")}.` : "",
       needs && needs.chips.length ? `${nameOf(listenerIdx)} braucht heute: ${needs.chips.join(", ")}.` : "",
-      needs && needs.text.trim() ? `${nameOf(listenerIdx)} schreibt: ${needs.text.trim()}` : "",
     ].filter(Boolean).join(" ");
     const payload: GuidanceRequest = {
       mode: "phrase",
@@ -424,6 +504,8 @@ const AfterDateCards: React.FC = () => {
   const pillOf = (slideId: string): { label: string | null; pill: string; pillDot: string } => {
     if (slideId === SLIDE_TITLE) return { label: null, pill: PINK, pillDot: "#FF4D00" };
     if (slideId === SLIDE_INTRO) return { label: "So geht's", pill: PINK, pillDot: "#FF4D00" };
+    if (slideId === SLIDE_RULES) return { label: "Drei Regeln", pill: PINK, pillDot: "#FF4D00" };
+    if (slideId === SLIDE_END) return { label: "Zum Abschluss", pill: PINK, pillDot: "#FF4D00" };
     const card = CARD_BY_ID[slideId];
     const phase = PHASES[card.phase];
     return { label: `${pad2(GAME_CARDS.indexOf(card) + 1)} · ${phase.title}`, pill: phase.pill, pillDot: phase.pillDot };
@@ -592,7 +674,7 @@ const AfterDateCards: React.FC = () => {
           </h1>
           <p className="retro-body-copy mt-8 text-center">Let's make honesty feel safe.</p>
           <p className="retro-body-copy-sm mt-3 text-center opacity-70">
-            Ein Fragespiel für offene Beziehungen: vom Date erzählen, auch wenn es zwickt.
+            Ein Gesprächsleitfaden für offene Beziehungen.
           </p>
           <div className="absolute z-40 flex items-center" style={{ left: 0, bottom: 0 }}>
             <ActionRow
@@ -612,7 +694,7 @@ const AfterDateCards: React.FC = () => {
         <div className="flex flex-col justify-start items-start w-full gap-6">
           <h2 className="retro-heading intro-lede w-full">
             <RevealText
-              text="Jemand von euch hatte ein Date. Dieses Spiel hilft, davon zu erzählen und gut beieinander zu bleiben, auch wenn Eifersucht oder Unsicherheit mitreden."
+              text="Ein Date mit jemand anderem liegt hinter euch. Jetzt nehmt ihr euch bewusst Zeit, darüber zu sprechen: ehrlich, neugierig und ohne Druck."
               color={PINK}
               slideIndex={index}
               stagger={45}
@@ -653,9 +735,7 @@ const AfterDateCards: React.FC = () => {
 
           <div className="flex flex-col gap-3 w-full retro-body-copy">
             <p className="retro-body-copy-sm opacity-70">Spielregeln</p>
-            <p>Jede Karte zeigt, wer am Zug ist. Ihr spielt nacheinander, in fünf Runden: Ankommen, Sag es, Erzähl mir, Das Schwierige, Wir.</p>
-            <p>Wer zuhört, bestimmt, wie viel erzählt wird. Wer erzählt, bleibt ehrlich, ohne zu beschönigen.</p>
-            <p>Jede Karte darf gepasst werden. Und „{HOLD_QUESTION}“ geht immer, über den Knopf unten.</p>
+            <p>Das Ziel: verstehen, wie es euch beiden damit geht. Eine Frage pro Karte, in fünf Runden. Jede Karte darf gepasst werden, und Nähe geht immer, über den Knopf unten.</p>
           </div>
 
           {guidanceEnabled() && (
@@ -663,6 +743,59 @@ const AfterDateCards: React.FC = () => {
               Sobald eine Karte beantwortet ist, schickt die App die Antworten auf dieser Karte an eine KI (Claude von Anthropic), die euch einen kurzen Impuls gibt. Auf diesem Gerät bleiben eure Antworten 8 Stunden gespeichert.
             </p>
           )}
+        </div>
+      );
+    }
+
+    if (slideId === SLIDE_RULES) {
+      const allAgreed = rulesAgreed.every(Boolean);
+      return (
+        <div className="flex flex-col items-start w-full gap-5">
+          <h2 className="question-font retro-heading w-full" lang="de">
+            <RevealText text="Drei Regeln für euer Gespräch" color={PINK} slideIndex={index} />
+          </h2>
+          <p className="retro-body-copy-sm opacity-70 -mt-2">Lest jede Regel laut vor und tippt sie an, wenn ihr beide einverstanden seid.</p>
+          <div className="w-full flex flex-col gap-2">
+            {RULES.map((rule, i) => (
+              <button
+                key={rule.title}
+                type="button"
+                aria-pressed={rulesAgreed[i]}
+                onClick={() => setRulesAgreed((prev) => prev.map((v, j) => (j === i ? !v : v)))}
+                className="swiper-no-swiping w-full flex flex-col items-start gap-1 p-3 text-left border-0 rounded-none transition-colors"
+                style={{ background: rulesAgreed[i] ? PINK : GREY_FIELD, color: INK }}
+              >
+                <span className="retro-body-copy">{rulesAgreed[i] ? "✓ " : ""}{rule.title}</span>
+                <span className="retro-body-copy-sm opacity-80">{rule.body}</span>
+              </button>
+            ))}
+          </div>
+          {allAgreed && (
+            <ActionRow
+              icon="IconArrowRight"
+              label="Einverstanden, los geht's"
+              accent="#FF6BEF"
+              fieldBg={GREY_FIELD}
+              onClick={() => swiperRef?.slideNext()}
+            />
+          )}
+        </div>
+      );
+    }
+
+    if (slideId === SLIDE_END) {
+      return (
+        <div className="flex flex-col items-start w-full gap-5">
+          <h2 className="question-font retro-heading w-full" lang="de">
+            <RevealText text="Zurück zu uns ❤️" color={PINK} slideIndex={index} />
+          </h2>
+          <p className="retro-body-copy">
+            Eine Umarmung, Kuscheln, gemeinsam einschlafen oder einfach Zeit füreinander, ohne dass sofort alles geklärt sein muss.
+          </p>
+          <p className="retro-body-copy w-full p-3" style={{ background: "#F6F1E8" }}>
+            Ein gutes Gespräch muss nicht damit enden, dass sich beide sofort gut fühlen. Manchmal reicht es, sich verstanden, ernst genommen und geliebt zu fühlen.
+          </p>
+          {holdButton("Jetzt halten")}
         </div>
       );
     }
@@ -683,6 +816,12 @@ const AfterDateCards: React.FC = () => {
           <RevealText text={card.question} color={PHASES[card.phase].pill} slideIndex={index} />
         </h2>
         {card.hint && <p className="retro-body-copy-sm opacity-70 -mt-2">{card.hint}</p>}
+        {card.tip && (
+          <div className="w-full flex flex-col gap-2 p-3" style={{ background: "#F6F1E8" }}>
+            <span className="retro-body-copy-sm opacity-70">Gesprächsimpuls für {nameOf(people.dateIdx)}</span>
+            <p className="retro-body-copy">{card.tip}</p>
+          </div>
+        )}
         {card.showWishesFrom && (
           <p className="retro-body-copy w-full p-3" style={{ background: "#F6F1E8" }}>
             {wishes || `${nameOf(listenerIdx)} hat noch nichts ausgewählt. Fragt kurz nach, was erzählt werden soll.`}
