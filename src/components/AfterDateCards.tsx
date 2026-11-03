@@ -293,6 +293,11 @@ const GUIDANCE_DEBOUNCE_MS = 1800;
 
 // Fields take part in swiping (the deck pages over them; a tap still focuses them) and show no
 // focus or press outline.
+// Answer fields fill the card's free height. Safari won't stretch a textarea as a flex item,
+// so a box takes the room (two lines at least) and the field fills the box.
+const fillBoxCls = "relative w-full flex-1 min-h-[64px]";
+const fillFieldCls = "absolute inset-0 h-full py-2 resize-none";
+
 const fieldCls =
   "retro-input retro-input-dark-text w-full rounded-none border-0 px-3 outline-none ring-0 focus:outline-none focus:ring-0 active:outline-none [-webkit-tap-highlight-color:transparent]";
 
@@ -702,35 +707,36 @@ const AfterDateCards: React.FC = () => {
               // person; scales and chips above a field already say what it is for.
               <div className="w-full flex flex-1 flex-col items-start gap-0">
                 {showName && nameTag(card, i, `answer-${card.id}-${i}`)}
-                <textarea
-                  id={`answer-${card.id}-${i}`}
-                  value={a.text}
-                  onChange={(e) => updateAnswer(card.id, i, { text: e.target.value })}
-                  placeholder={card.text}
-                  aria-label={showName ? undefined : card.text.replace(/\s*…$/, "")}
-                  rows={2}
-                  className={`${fieldCls} py-2 flex-1 min-h-[64px] resize-none`}
-                  style={{ background: GREY_FIELD }}
-                />
+                <div className={fillBoxCls}>
+                  <textarea
+                    id={`answer-${card.id}-${i}`}
+                    value={a.text}
+                    onChange={(e) => updateAnswer(card.id, i, { text: e.target.value })}
+                    placeholder={card.text}
+                    aria-label={showName ? undefined : card.text.replace(/\s*…$/, "")}
+                    className={`${fieldCls} ${fillFieldCls}`}
+                    style={{ background: GREY_FIELD }}
+                  />
+                </div>
               </div>
             )}
             {card.prompts && (
               <div className="w-full flex flex-1 flex-col gap-2">
                 {card.prompts.map((prompt, k) => (
-                  <textarea
-                    key={prompt}
-                    value={a.texts?.[k] ?? ""}
-                    onChange={(e) => {
-                      const texts = card.prompts!.map((_, n) => a.texts?.[n] ?? "");
-                      texts[k] = e.target.value;
-                      updateAnswer(card.id, i, { texts });
-                    }}
-                    placeholder={prompt}
-                    aria-label={prompt}
-                    rows={2}
-                    className={`${fieldCls} py-2 flex-1 min-h-[64px] resize-none`}
-                    style={{ background: GREY_FIELD }}
-                  />
+                  <div key={prompt} className={fillBoxCls}>
+                    <textarea
+                      value={a.texts?.[k] ?? ""}
+                      onChange={(e) => {
+                        const texts = card.prompts!.map((_, n) => a.texts?.[n] ?? "");
+                        texts[k] = e.target.value;
+                        updateAnswer(card.id, i, { texts });
+                      }}
+                      placeholder={prompt}
+                      aria-label={prompt}
+                      className={`${fieldCls} ${fillFieldCls}`}
+                      style={{ background: GREY_FIELD }}
+                    />
+                  </div>
                 ))}
               </div>
             )}
