@@ -56,6 +56,8 @@ interface GameCard {
   scale?: boolean;
   /** One word per face, worst to best, matching the question */
   scaleLabels?: string[];
+  /** An emoji per chip that shows the feeling */
+  chipIcons?: Record<string, string>;
   /** Chips tied to topics the listener may not want to hear (see `prompts`); hidden then */
   chipTopics?: Record<string, string[]>;
   /** Shown only when this returns true for the listener's earlier answers; skipped otherwise */
@@ -105,10 +107,33 @@ const GAME_CARDS: GameCard[] = [
     id: "checkin-safe",
     phase: 0,
     who: "listener",
-    question: "Wie sicher fühlst du dich gerade?",
-    scale: true,
-    scaleLabels: ["Unsicher", "Eher unsicher", "Gemischt", "Eher sicher", "Sicher & verbunden"],
-    chips: ["Neugierig", "Gespannt", "Entspannt", "Unsicher", "Eifersüchtig", "Ängstlich", "Aufgeregt", "Überfordert", "Unwohl"],
+    question: "Wie fühlst du dich gerade?",
+    chips: [
+      "Sicher",
+      "Verbunden",
+      "Entspannt",
+      "Neugierig",
+      "Gespannt",
+      "Aufgeregt",
+      "Unsicher",
+      "Eifersüchtig",
+      "Ängstlich",
+      "Überfordert",
+      "Unwohl",
+    ],
+    chipIcons: {
+      Sicher: "🙂",
+      Verbunden: "🥰",
+      Entspannt: "😌",
+      Neugierig: "🤔",
+      Gespannt: "😯",
+      Aufgeregt: "🤩",
+      Unsicher: "😕",
+      Eifersüchtig: "😒",
+      Ängstlich: "😨",
+      Überfordert: "😵‍💫",
+      Unwohl: "😣",
+    },
     text: "Was noch da ist …",
   },
   {
@@ -870,6 +895,7 @@ const AfterDateCards: React.FC = () => {
             {card.chips && (
               <ChipGroup
                 options={card.chips.filter((c) => topicsWanted(card, card.chipTopics?.[c]))}
+                icons={card.chipIcons}
                 value={a.chips}
                 onChange={(v) => updateAnswer(card.id, i, { chips: v })}
                 accent={phase.face}
