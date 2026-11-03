@@ -131,7 +131,6 @@ const GAME_CARDS: GameCard[] = [
       { q: "Mit wem hast du dich getroffen und wie kam es dazu?", topics: [TOPIC_WHO] },
       { q: "Wie habt ihr eure Zeit verbracht und wie hast du das Date erlebt?", topics: [TOPIC_WHAT, TOPIC_FEELINGS] },
       { q: "Gab es körperliche oder emotionale Nähe, über die wir sprechen sollten?", topics: [TOPIC_BODY] },
-      { q: "Wollt ihr euch wiedersehen?", topics: [TOPIC_AGAIN] },
       { q: "Gibt es etwas Wichtiges, das du mir noch erzählen möchtest?" },
     ],
   },
@@ -152,6 +151,19 @@ const GAME_CARDS: GameCard[] = [
     ],
     chipTopics: { "Die sexuelle Anziehung": [TOPIC_BODY] },
     text: "Eigene Gedanken …",
+  },
+  {
+    // Asked only if the listener wants to hear about it (or hasn't picked anything yet).
+    id: "date-again",
+    phase: 1,
+    who: "date",
+    question: "Wünschst du dir, diese Person wiederzusehen?",
+    chips: ["Ja, gerne", "Vielleicht", "Nein", "Ich weiß es noch nicht"],
+    text: "Eigene Gedanken …",
+    showIf: (listener) => {
+      const wishes = listener("howmuch")?.chips ?? [];
+      return wishes.length === 0 || wishes.includes(TOPIC_AGAIN);
+    },
   },
   {
     id: "feel-trigger",
