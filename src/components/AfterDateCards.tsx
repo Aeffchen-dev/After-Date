@@ -30,15 +30,17 @@ interface Phase {
   face: string;
   /** The question's colour on the white card: the round's colour, deep enough to read */
   text: string;
+  /** Page background: the round's colour at shade 900 */
+  page: string;
 }
 
 const PHASES: Phase[] = [
-  { title: "Ankommen", pill: "#FF4D00", pillDot: INK, face: "#FFB28F", text: "#E64500" },
-  { title: "Erzählen", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF", text: "#9A1FE0" },
-  { title: "Fühlen", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF", text: "#0082C4" },
-  { title: "Sicherheit", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400", text: "#9C7A00" },
-  { title: "Absprachen", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D", text: "#0B7A35" },
-  { title: "Nähe", pill: "#FF6BEF", pillDot: INK, face: "#FFC2F7", text: "#C92FB6" },
+  { title: "Ankommen", pill: "#FF4D00", pillDot: INK, face: "#FFB28F", text: "#E64500", page: "#7C2D12" },
+  { title: "Erzählen", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF", text: "#9A1FE0", page: "#581C87" },
+  { title: "Fühlen", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF", text: "#0082C4", page: "#0C4A6E" },
+  { title: "Sicherheit", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400", text: "#9C7A00", page: "#713F12" },
+  { title: "Absprachen", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D", text: "#0B7A35", page: "#14532D" },
+  { title: "Nähe", pill: "#FF6BEF", pillDot: INK, face: "#FFC2F7", text: "#C92FB6", page: "#701A75" },
 ];
 
 /** Who answers a card: the person who had the date, the other one, or both. */
@@ -252,9 +254,6 @@ const SLIDES: string[] = [SLIDE_TITLE, SLIDE_INTRO, ...GAME_CARDS.map((c) => c.i
 const CARD_BY_ID = Object.fromEntries(GAME_CARDS.map((c) => [c.id, c])) as Record<string, GameCard>;
 
 
-// How far the page colour moves from the round's colour towards ink (0 = same, 1 = ink).
-const PAGE_DARKEN = 0.85;
-
 /** Ink or white, whichever reads better on a #RRGGBB fill. */
 const inkOn = (hex: string) => {
   const [r, g, b] = [1, 3, 5].map((i) => {
@@ -263,15 +262,6 @@ const inkOn = (hex: string) => {
   });
   const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
   return 1.05 / (l + 0.05) > (l + 0.05) / 0.0176 ? "#FFFFFF" : INK;
-};
-
-/** Mixes a #RRGGBB colour towards INK. */
-const darken = (hex: string, amount: number) => {
-  const mix = (from: string, to: string) =>
-    Math.round(parseInt(from, 16) * (1 - amount) + parseInt(to, 16) * amount)
-      .toString(16)
-      .padStart(2, "0");
-  return `#${[1, 3, 5].map((i) => mix(hex.slice(i, i + 2), INK.slice(i, i + 2))).join("")}`;
 };
 
 /** The two people playing; `dateIdx` marks who had the date. */
@@ -632,14 +622,11 @@ const AfterDateCards: React.FC = () => {
     if (slideId === SLIDE_INTRO) return { label: "So geht's", pill: PINK, pillDot: "#FF4D00" };
     const card = CARD_BY_ID[slideId];
     const phase = PHASES[card.phase];
-    // The round, plus whose turn it is when only one person answers; cards for both say nothing more.
-    const label = card.who === "both" || card.who === "together" ? phase.title : `${phase.title} · ${nameOf(playersOf(card)[0])}`;
-    return { label, pill: phase.pill, pillDot: phase.pillDot };
+    return { label: phase.title, pill: phase.pill, pillDot: phase.pillDot };
   };
 
   const activeGameCard = CARD_BY_ID[SLIDES[currentCard]];
-  // A darker shade of the round's colour, so the white card and the pill stand out on it.
-  const pageColour = activeGameCard ? darken(PHASES[activeGameCard.phase].pill, PAGE_DARKEN) : INK;
+  const pageColour = activeGameCard ? PHASES[activeGameCard.phase].page : INK;
 
   const holdButton = (label: string) => (
     <ActionRow
@@ -812,14 +799,15 @@ const AfterDateCards: React.FC = () => {
       />
     );
     return (
-      <div className="w-full flex flex-col gap-3">
+      // Closed, the CTA sits in the card's bottom left corner.
+      <div className={`w-full flex flex-col gap-3 ${rulesOpen ? "" : "mt-auto"}`}>
         {rulesOpen ? (
           <>
             {renderRuleNotes()}
             {toggle("Regeln schließen")}
           </>
         ) : (
-          toggle(`Unsere Regeln ansehen (${rules.length})`)
+          toggle("Unsere Regeln ansehen")
         )}
       </div>
     );
