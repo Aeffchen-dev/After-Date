@@ -767,7 +767,7 @@ const AfterDateCards: React.FC = () => {
         icon={rulesOpen ? "IconClear" : "IconPencil"}
         label={label}
         accent={accent}
-        iconColor={inkOn(accent)}
+        iconColor="#FFFFFF"
         fieldBg={GREY_FIELD}
         onClick={() => {
           if (!rulesOpen) loadSharedRules();
@@ -922,9 +922,10 @@ const AfterDateCards: React.FC = () => {
             <RevealText text={card.question} color={INK} slideIndex={index} />
           </h2>
         )}
-        {card.showWishesFrom && (
+        {/* Only what the listener picked; nothing shows until they have. */}
+        {wishes && (
           <p className="retro-body-copy w-full p-3" style={{ background: "#F6F1E8" }}>
-            {wishes || `${nameOf(listenerIdx)} hat noch nichts ausgewählt. Fragt kurz nach, was erzählt werden soll.`}
+            {wishes}
           </p>
         )}
         {!card.rules && players.map((i) => renderPlayer(card, i))}
