@@ -106,7 +106,7 @@ const GAME_CARDS: GameCard[] = [
     chips: [...TOPICS, NOTHING_YET],
     text: "Oder in deinen Worten …",
   },
-  // 2. Erzählen: vom Date, und was es gleich auslöst
+  // 2. Erzählen: vom Date
   {
     id: "date-how",
     phase: 1,
@@ -122,9 +122,10 @@ const GAME_CARDS: GameCard[] = [
       { q: "Gibt es etwas Wichtiges, das du mir noch erzählen möchtest?" },
     ],
   },
+  // 3. Fühlen: was es auslöst und was dahinter steckt
   {
     id: "feel-trigger",
-    phase: 1,
+    phase: 2,
     who: "listener",
     question: "Was geht dir durch den Kopf, nachdem du davon gehört hast?",
     scale: true,
@@ -140,7 +141,6 @@ const GAME_CARDS: GameCard[] = [
     ],
     text: "Eigene Gedanken …",
   },
-  // 3. Fühlen: was dahinter steckt
   {
     id: "feel-fears",
     phase: 2,
