@@ -286,17 +286,19 @@ const GAME_CARDS: GameCard[] = [
   },
   // 5. Absprachen: was ihr euch wünscht und was gilt
   {
-    id: "us-wish",
+    // One shared answer; the couple's rules open from this card.
+    id: "us-agreements",
     phase: 4,
-    who: "both",
-    question: "Was wünschst du dir künftig anders?",
-    text: "Ich wünsche mir …",
-  },
-  {
-    id: "us-rules",
-    phase: 4,
-    who: "both",
-    question: "Müssen wir unsere Regeln anpassen?",
+    who: "together",
+    question: "Gab es etwas, das unsere Vereinbarungen berührt oder verändert?",
+    chips: [
+      "Nein, alles war im Rahmen",
+      "Eine Grenze war unklar",
+      "Eine Absprache wurde nicht eingehalten",
+      "Ich wünsche mir eine neue Absprache",
+      "Das sollten wir gemeinsam klären",
+    ],
+    text: "Eigene Gedanken …",
     rules: true,
   },
   // 6. Nähe: zurück zueinander
@@ -428,8 +430,6 @@ const answerText = (card: GameCard, a: PersonAnswer) =>
     : a.text.trim();
 
 const isAnswered = (card: GameCard, a: PersonAnswer) => {
-  // The rules card sends nothing to the AI.
-  if (card.rules) return false;
   if (answerText(card, a)) return true;
   // A scale card is answered once a face is picked; chips next to it stay optional.
   if (card.scale) return a.mood !== null;
@@ -1084,7 +1084,7 @@ const AfterDateCards: React.FC = () => {
           </h2>
         )}
         {card.showWishesFrom && renderTellGuide(card.showWishesFrom)}
-        {!card.rules && players.map((i) => renderPlayer(card, i))}
+        {!(card.rules && rulesOpen) && players.map((i) => renderPlayer(card, i))}
         {card.rules && renderRules(PHASES[card.phase].pill)}
         {renderGuidance(card)}
       </div>

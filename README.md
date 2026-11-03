@@ -30,7 +30,7 @@ npx wrangler deploy
 
 ### Shared rules (optional)
 
-The rules on "Müssen wir unsere Regeln anpassen?" are shared between your phones through the Worker. Create a KV namespace once, then uncomment the `[[kv_namespaces]]` block in `worker/wrangler.toml` with the printed id and deploy again:
+The rules behind "Unsere Regeln ansehen" (on the Absprachen card) are shared between your phones through the Worker. Create a KV namespace once, then uncomment the `[[kv_namespaces]]` block in `worker/wrangler.toml` with the printed id and deploy again:
 
 ```sh
 cd worker
