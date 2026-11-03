@@ -352,7 +352,7 @@ const GAME_CARDS: GameCard[] = [
     phase: 5,
     who: "together",
     question: "Wie kommen wir uns jetzt nah?",
-    chips: ["Umarmen", "Kuscheln", "Zusammen einschlafen", "Reden", "Lachen"],
+    chips: ["Umarmen", "Kuscheln", "Zusammen einschlafen", "Reden", "Lachen", "Spaziergang", "Me Time"],
     text: "Was wir als Erstes machen …",
   },
 ];
