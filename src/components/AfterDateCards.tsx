@@ -96,9 +96,15 @@ const GAME_CARDS: GameCard[] = [
     id: "date-how",
     phase: 1,
     who: "date",
-    question: "Wie war dein Date?",
+    question: "Erzähl von deinem Date",
     showWishesFrom: "howmuch",
-    text: "Was du erzählst, in Stichworten …",
+    // Four prompts in the empty field, a blank line apart, to guide the telling.
+    text: [
+      "Mit wem hast du dich getroffen und wie kam es dazu?",
+      "Wie habt ihr eure Zeit verbracht und wie hast du das Date erlebt?",
+      "Gab es körperliche oder emotionale Nähe, über die wir sprechen sollten?",
+      "Gibt es etwas Wichtiges, das du mir noch erzählen möchtest?",
+    ].join("\n\n"),
     phrase: true,
   },
   {
@@ -751,7 +757,7 @@ const AfterDateCards: React.FC = () => {
                   value={a.text}
                   onChange={(e) => updateAnswer(card.id, i, { text: e.target.value })}
                   placeholder={card.text}
-                  aria-label={showName ? undefined : card.text.replace(/\s*…$/, "")}
+                  aria-label={showName ? undefined : card.text.split("\n")[0].replace(/\s*…$/, "")}
                   rows={2}
                   className={`${fieldCls} py-2 flex-1 min-h-[64px] resize-none`}
                   style={{ background: GREY_FIELD }}
