@@ -757,20 +757,24 @@ const AfterDateCards: React.FC = () => {
               />
             )}
             {card.text && (
-              // Label tag on top of the field, as on the names slide; on cards for both it names the person.
+              // The field's prompt is its placeholder. Only on cards for both does a tag on top name the
+              // person; scales and chips above a field already say what it is for.
               <div className="w-full flex flex-1 flex-col items-start gap-0">
-                <label
-                  htmlFor={`answer-${card.id}-${i}`}
-                  className="retro-body-copy-sm inline-flex min-h-6 items-center px-2"
-                  style={{ background: phase.face, color: INK }}
-                >
-                  {showName ? nameOf(i) : card.text.replace(/\s*…$/, "")}
-                </label>
+                {showName && (
+                  <label
+                    htmlFor={`answer-${card.id}-${i}`}
+                    className="retro-body-copy-sm inline-flex min-h-6 items-center px-2"
+                    style={{ background: phase.face, color: INK }}
+                  >
+                    {nameOf(i)}
+                  </label>
+                )}
                 <textarea
                   id={`answer-${card.id}-${i}`}
                   value={a.text}
                   onChange={(e) => updateAnswer(card.id, i, { text: e.target.value })}
-                  placeholder="Deine Antwort"
+                  placeholder={card.text}
+                  aria-label={showName ? undefined : card.text.replace(/\s*…$/, "")}
                   rows={2}
                   className={`${fieldCls} py-2 flex-1 min-h-[64px] resize-none`}
                   style={{ background: GREY_FIELD }}
@@ -942,11 +946,7 @@ const AfterDateCards: React.FC = () => {
     const wishes = card.showWishesFrom ? wishesText(card.showWishesFrom) : "";
     return (
       <div className="flex flex-1 flex-col items-start w-full gap-5">
-        <h2
-          className="question-font retro-heading card-question w-full"
-          lang="de"
-          style={{ ["--settle-color" as string]: PHASES[card.phase].text } as React.CSSProperties}
-        >
+        <h2 className="question-font retro-heading card-question w-full" lang="de">
           <RevealText text={card.question} color={PHASES[card.phase].text} slideIndex={index} />
         </h2>
         {card.showWishesFrom && (

@@ -1880,8 +1880,7 @@ textarea.bg-retro-post-it:focus,
 }
 @keyframes question-word-settle {
   from { color: var(--reveal-color, #201C1D); }
-  /* A heading can keep its own colour by setting --settle-color, e.g. a card question in its round's colour. */
-  to { color: var(--settle-color, #201C1D); }
+  to { color: #201C1D; }
 }
 /* Card questions one step under the display size, so the answers get the room. */
 #root .card-question { font-size: 30px; line-height: 1.05; }

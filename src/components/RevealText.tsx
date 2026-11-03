@@ -52,7 +52,7 @@ const RevealTextBase: React.FC<RevealTextProps> = ({ text, color, stagger = 65, 
   }, [runId, active, text]);
 
   if (!active) {
-    return <span style={{ color: "var(--settle-color, #201C1D)" }}>{text}</span>;
+    return <span style={{ color: "#201C1D" }}>{text}</span>;
   }
 
   return (
