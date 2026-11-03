@@ -144,7 +144,13 @@ const handleRules = async (request: Request, env: Env, cors: Record<string, stri
     return json({ error: "bad_request" }, 400, cors);
   }
   const rules = (list as string[]).map((r) => r.slice(0, MAX_RULE));
-  await env.RULES.put("rules", JSON.stringify(rules));
+  try {
+    await env.RULES.put("rules", JSON.stringify(rules));
+  } catch (error) {
+    // KV takes about one write per second per key; the page keeps its copy and retries.
+    console.error(error);
+    return json({ error: "busy" }, 503, cors);
+  }
   return json({ rules }, 200, cors);
 };
 

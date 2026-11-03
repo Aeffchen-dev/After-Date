@@ -4,7 +4,7 @@ import RevealText from "@/components/RevealText";
 import SmileyScale from "@/components/SmileyScale";
 import ChipGroup from "@/components/ChipGroup";
 import { ActiveSlideContext } from "@/components/ActiveSlideContext";
-import { Heart } from "lucide-react";
+import { Heart, Lightbulb, MessageCircleQuestion } from "lucide-react";
 
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Keyboard } from "swiper/modules";
@@ -173,7 +173,7 @@ const GAME_CARDS: GameCard[] = [
     phase: 3,
     who: "both",
     question: "Müssen wir unsere Regeln anpassen?",
-    hint: "Tippt eine Regel an, um sie zu ändern. Ihr seht beide dieselben Regeln.",
+    hint: "Tippt eine Regel an, um sie zu ändern. Änderungen erscheinen auf beiden Handys.",
     rules: true,
   },
   {
@@ -239,8 +239,10 @@ const DEFAULT_RULES: string[] = [
 // Kept without the 8-hour expiry: the rules outlive one conversation. The Worker holds the
 // shared copy both phones see; this device copy is the fallback while it can't be reached.
 const RULES_KEY = "after-date-rules";
-// Edits are sent to the Worker once typing pauses.
-const RULES_SAVE_DEBOUNCE_MS = 1000;
+// Set while this device has edits the Worker hasn't confirmed, so they survive a reload offline.
+const RULES_DIRTY_KEY = "after-date-rules-unsent";
+// Edits are sent to the Worker once typing pauses; it shares its rate limit with guidance.
+const RULES_SAVE_DEBOUNCE_MS = 2000;
 
 const HOLD_QUESTION = "Can we just hold each other for a moment?";
 
@@ -361,23 +363,66 @@ const AfterDateCards: React.FC = () => {
   }, [answers]);
 
   const [rulesOpen, setRulesOpen] = useState(false);
-  // Edits made here are sent on; the copy fetched from the Worker is not sent back.
-  const rulesEdited = useRef(false);
+  // Advice (the AI impulse, the "Frag nach" tip) sits behind a CTA per card, opened on tap.
+  const [adviceOpen, setAdviceOpen] = useState<Record<string, boolean>>({});
+  // Each local edit bumps `edits`; `sent` is the last edit the Worker confirmed. While they
+  // differ, this device's rules are newer than the shared copy and are never overwritten by it.
+  const rulesEdits = useRef(0);
+  const rulesSent = useRef(0);
+  // Saves run one after another, so an older one can never land after a newer one.
+  const rulesQueue = useRef<Promise<void>>(Promise.resolve());
 
   const loadSharedRules = useCallback(() => {
-    if (rulesEdited.current) return;
+    const startedAt = rulesEdits.current;
+    if (startedAt !== rulesSent.current) return;
     fetchRules()
       .then((shared) => {
-        if (shared && !rulesEdited.current) setRules(shared);
+        // Only take the shared copy when nothing was edited here since asking.
+        if (shared && rulesEdits.current === startedAt && rulesSent.current === startedAt) setRules(shared);
       })
       .catch(() => {
         // Offline or not set up: the device copy stays.
       });
   }, []);
 
+  const sendRules = useCallback((list: string[]) => {
+    const version = rulesEdits.current;
+    rulesQueue.current = rulesQueue.current.then(() =>
+      saveRules(list)
+        .then((ok) => {
+          if (!ok) return;
+          rulesSent.current = Math.max(rulesSent.current, version);
+          if (rulesSent.current === rulesEdits.current) {
+            try {
+              localStorage.removeItem(RULES_DIRTY_KEY);
+            } catch {
+              // Nothing to clear in private mode.
+            }
+          }
+        })
+        .catch(() => {
+          // Kept on the device and marked unsent; the next edit or visit tries again.
+        })
+    );
+  }, []);
+
   useEffect(() => {
-    loadSharedRules();
-  }, [loadSharedRules]);
+    // Edits left unsent on an earlier visit go out first instead of being replaced.
+    let unsent = false;
+    try {
+      unsent = localStorage.getItem(RULES_DIRTY_KEY) === "1";
+    } catch {
+      unsent = false;
+    }
+    if (unsent) {
+      rulesEdits.current = 1;
+      sendRules(rules);
+    } else {
+      loadSharedRules();
+    }
+    // Runs once on mount with the rules loaded from the device.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     try {
@@ -385,21 +430,18 @@ const AfterDateCards: React.FC = () => {
     } catch {
       // Private mode: the rules still work for this visit.
     }
-    if (!rulesEdited.current) return;
-    const t = setTimeout(() => {
-      saveRules(rules)
-        .then((ok) => {
-          if (ok) rulesEdited.current = false;
-        })
-        .catch(() => {
-          // Kept on the device; the next edit tries again.
-        });
-    }, RULES_SAVE_DEBOUNCE_MS);
+    if (rulesEdits.current === rulesSent.current) return;
+    const t = setTimeout(() => sendRules(rules), RULES_SAVE_DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [rules]);
+  }, [rules, sendRules]);
 
   const editRules = (change: (prev: string[]) => string[]) => {
-    rulesEdited.current = true;
+    rulesEdits.current += 1;
+    try {
+      localStorage.setItem(RULES_DIRTY_KEY, "1");
+    } catch {
+      // Private mode: unsent edits only last this visit.
+    }
     setRules(change);
   };
 
@@ -588,26 +630,49 @@ const AfterDateCards: React.FC = () => {
     />
   );
 
+  /** A CTA that opens its advice inline on the card, like the rules notes. */
+  const renderAdvice = (key: string, label: string, icon: React.ReactNode, accent: string, body: React.ReactNode) => {
+    const open = !!adviceOpen[key];
+    return (
+      <div className="w-full flex flex-col gap-3">
+        <ActionRow
+          iconNode={icon}
+          label={open ? "Schließen" : label}
+          accent={accent}
+          fieldBg={GREY_FIELD}
+          onClick={() => setAdviceOpen((prev) => ({ ...prev, [key]: !open }))}
+        />
+        {open && (
+          <div className="w-full flex flex-col gap-2 p-4" style={{ background: accent, color: INK }} aria-live="polite">
+            {body}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderGuidance = (card: GameCard) => {
     const a = answers[card.id];
     const g = guidance[card.id];
     // "Sehr schwer" or "Eher schwer" always offers the hold card, whatever the AI says.
     const someoneLow = !!a && playersOf(card).some((i) => a[i].mood !== null && (a[i].mood as number) <= 2);
-    if (!g && !someoneLow) return null;
+    const offerHold = someoneLow || (g?.status === "done" && g.data.suggestHold);
+    // The CTA appears once there is an impulse; while it is written or when none came, nothing shows.
+    if (g?.status !== "done" && !offerHold) return null;
     return (
-      <div className="w-full flex flex-col gap-3 p-4" style={{ background: "#F6F1E8" }} aria-live="polite">
-        <span className="retro-body-copy-sm opacity-70">Impuls für euch</span>
-        {g?.status === "loading" && <p className="retro-body-copy">Einen Moment, ich lese mit …</p>}
-        {g?.status === "error" && (
-          <p className="retro-body-copy">Gerade kam kein Impuls zustande. Redet einfach weiter, ihr braucht ihn nicht.</p>
-        )}
-        {g?.status === "done" && (
-          <>
-            <p className="retro-body-copy">{g.data.guidance}</p>
-            {g.data.followUpQuestion && <p className="retro-body-copy">{g.data.followUpQuestion}</p>}
-          </>
-        )}
-        {(someoneLow || (g?.status === "done" && g.data.suggestHold)) && holdButton("Erst mal Nähe?")}
+      <div className="w-full flex flex-col gap-3">
+        {g?.status === "done" &&
+          renderAdvice(
+            `ai-${card.id}`,
+            "Impuls für euch",
+            <Lightbulb size={16} strokeWidth={1.5} color={INK} />,
+            "#F6F1E8",
+            <>
+              <p className="retro-body-copy">{g.data.guidance}</p>
+              {g.data.followUpQuestion && <p className="retro-body-copy">{g.data.followUpQuestion}</p>}
+            </>
+          )}
+        {offerHold && holdButton("Erst mal Nähe?")}
       </div>
     );
   };
@@ -867,16 +932,16 @@ const AfterDateCards: React.FC = () => {
         )}
         {!card.rules && players.map((i) => renderPlayer(card, i))}
         {card.rules && renderRules()}
-        {card.tip && (
-          <div className="w-full flex flex-col gap-2 p-4" style={{ background: PHASES[card.phase].face, color: INK }}>
-            <span className="retro-body-copy-sm opacity-70">
-              {card.tip.title}, {nameOf(people.dateIdx)}
-            </span>
-            {card.tip.lines.map((line) => (
+        {card.tip &&
+          renderAdvice(
+            `tip-${card.id}`,
+            `${card.tip.title}, ${nameOf(people.dateIdx)}`,
+            <MessageCircleQuestion size={16} strokeWidth={1.5} color={INK} />,
+            PHASES[card.phase].face,
+            card.tip.lines.map((line) => (
               <p key={line} className="retro-body-copy">{line}</p>
-            ))}
-          </div>
-        )}
+            ))
+          )}
         {card.phrase && renderPhrasing(card)}
         {card.showMatches && renderMatches(card)}
         {renderGuidance(card)}
@@ -986,7 +1051,7 @@ const AfterDateCards: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-label={HOLD_QUESTION}
-            className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-8 px-6 animate-[fadeInUp_0.4s_ease-out_both]"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-8 px-6 pb-24 animate-[fadeInUp_0.4s_ease-out_both]"
             style={{ backgroundColor: PINK, color: INK }}
           >
             <HugIllustration />
