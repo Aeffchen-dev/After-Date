@@ -42,7 +42,8 @@ const PHASES: Phase[] = [
 ];
 
 /** Who answers a card: the person who had the date, the other one, or both. */
-type Who = "date" | "listener" | "both";
+/** "together" is one shared answer for both people, e.g. what they pick to do next. */
+type Who = "date" | "listener" | "both" | "together";
 
 interface GameCard {
   id: string;
@@ -63,8 +64,6 @@ interface GameCard {
   phrase?: boolean;
   /** Shows what the listener picked on that card, so the teller knows what to cover */
   showWishesFrom?: string;
-  /** Shows the chips both people picked */
-  showMatches?: boolean;
 }
 
 const NOTHING_YET = "Lieber erst mal nichts";
@@ -201,10 +200,10 @@ const GAME_CARDS: GameCard[] = [
   {
     id: "rc-close",
     phase: 5,
-    who: "both",
+    who: "together",
     question: "Wie kommen wir uns jetzt nah?",
     chips: ["Umarmen", "Kuscheln", "Zusammen einschlafen", "Reden", "Lachen"],
-    showMatches: true,
+    text: "Was wir als Erstes machen …",
   },
 ];
 
@@ -255,6 +254,16 @@ const CARD_BY_ID = Object.fromEntries(GAME_CARDS.map((c) => [c.id, c])) as Recor
 
 // How far the page colour moves from the round's colour towards ink (0 = same, 1 = ink).
 const PAGE_DARKEN = 0.85;
+
+/** Ink or white, whichever reads better on a #RRGGBB fill. */
+const inkOn = (hex: string) => {
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return 1.05 / (l + 0.05) > (l + 0.05) / 0.0176 ? "#FFFFFF" : INK;
+};
 
 /** Mixes a #RRGGBB colour towards INK. */
 const darken = (hex: string, amount: number) => {
@@ -463,7 +472,7 @@ const AfterDateCards: React.FC = () => {
   const roleOf = (i: 0 | 1): GuidanceAnswer["role"] => (people.dateIdx === i ? "date" : "listener");
   const listenerIdx = (people.dateIdx === 0 ? 1 : 0) as 0 | 1;
   const playersOf = (card: GameCard): (0 | 1)[] =>
-    card.who === "both" ? [0, 1] : card.who === "date" ? [people.dateIdx] : [listenerIdx];
+    card.who === "both" ? [0, 1] : card.who === "together" ? [0] : card.who === "date" ? [people.dateIdx] : [listenerIdx];
 
   /** What the listener asked to hear, as a sentence for the teller and the AI. */
   const wishesText = (cardId: string) => {
@@ -476,7 +485,7 @@ const AfterDateCards: React.FC = () => {
   };
 
   const answerPayload = (card: GameCard, i: 0 | 1, a: PersonAnswer): GuidanceAnswer => ({
-    name: nameOf(i),
+    name: card.who === "together" ? `${nameOf(0)} und ${nameOf(1)}` : nameOf(i),
     role: roleOf(i),
     ...(card.scale && a.mood !== null ? { mood: a.mood } : {}),
     ...(card.chips ? { chips: a.chips } : {}),
@@ -624,7 +633,7 @@ const AfterDateCards: React.FC = () => {
     const card = CARD_BY_ID[slideId];
     const phase = PHASES[card.phase];
     // The round, plus whose turn it is when only one person answers; cards for both say nothing more.
-    const label = card.who === "both" ? phase.title : `${phase.title} · ${nameOf(playersOf(card)[0])}`;
+    const label = card.who === "both" || card.who === "together" ? phase.title : `${phase.title} · ${nameOf(playersOf(card)[0])}`;
     return { label, pill: phase.pill, pillDot: phase.pillDot };
   };
 
@@ -723,20 +732,28 @@ const AfterDateCards: React.FC = () => {
     );
   };
 
+  /** Whose field it is on cards for both: the setup slide's label tag, in the round's full colour. */
+  const nameTag = (card: GameCard, i: 0 | 1, htmlFor?: string) => {
+    const bg = PHASES[card.phase].pill;
+    const Tag = htmlFor ? "label" : "span";
+    return (
+      <Tag
+        htmlFor={htmlFor}
+        className="retro-body-copy self-start inline-flex h-8 items-center px-3"
+        style={{ background: bg, color: inkOn(bg) }}
+      >
+        {nameOf(i)}
+      </Tag>
+    );
+  };
+
   const renderPlayer = (card: GameCard, i: 0 | 1) => {
     const a = answers[card.id]?.[i] ?? EMPTY_PERSON;
     const phase = PHASES[card.phase];
     const showName = card.who === "both";
     return (
       <div key={i} className="w-full flex flex-1 flex-col gap-3">
-        {showName && !card.text && (
-          <span
-            className="retro-body-copy-sm self-start inline-flex h-6 items-center px-2"
-            style={{ background: PHASES[card.phase].face, color: INK }}
-          >
-            {nameOf(i)}
-          </span>
-        )}
+        {showName && !card.text && nameTag(card, i)}
         {
           <>
             {card.scale && (
@@ -760,15 +777,7 @@ const AfterDateCards: React.FC = () => {
               // The field's prompt is its placeholder. Only on cards for both does a tag on top name the
               // person; scales and chips above a field already say what it is for.
               <div className="w-full flex flex-1 flex-col items-start gap-0">
-                {showName && (
-                  <label
-                    htmlFor={`answer-${card.id}-${i}`}
-                    className="retro-body-copy-sm inline-flex min-h-6 items-center px-2"
-                    style={{ background: phase.face, color: INK }}
-                  >
-                    {nameOf(i)}
-                  </label>
-                )}
+                {showName && nameTag(card, i, `answer-${card.id}-${i}`)}
                 <textarea
                   id={`answer-${card.id}-${i}`}
                   value={a.text}
@@ -848,21 +857,6 @@ const AfterDateCards: React.FC = () => {
       </button>
     </div>
   );
-
-  const renderMatches = (card: GameCard) => {
-    const a = answers[card.id];
-    if (!a || a[0].chips.length === 0 || a[1].chips.length === 0) return null;
-    const both = a[0].chips.filter((c) => a[1].chips.includes(c));
-    return (
-      <div className="w-full p-4" style={{ background: PHASES[card.phase].face }}>
-        <p className="retro-body-copy">
-          {both.length
-            ? `Ihr habt beide Lust auf: ${both.join(", ")}.`
-            : "Diesmal wollt ihr Verschiedenes. Was davon geht zuerst?"}
-        </p>
-      </div>
-    );
-  };
 
   const renderCard = (slideId: string, index: number) => {
     if (slideId === SLIDE_TITLE) {
@@ -981,7 +975,6 @@ const AfterDateCards: React.FC = () => {
             ))
           )}
         {card.phrase && renderPhrasing(card)}
-        {card.showMatches && renderMatches(card)}
         {renderGuidance(card)}
       </div>
     );
