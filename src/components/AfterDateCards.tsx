@@ -172,7 +172,6 @@ const GAME_CARDS: GameCard[] = [
       "Die Gespräche",
       "Das Neue und Aufregende",
       "Mich frei und begehrt zu fühlen",
-      "Etwas anderes",
     ],
     chipTopics: { "Die sexuelle Anziehung": [TOPIC_BODY] },
     text: "Eigene Gedanken …",
