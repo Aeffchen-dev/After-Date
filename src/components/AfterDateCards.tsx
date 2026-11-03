@@ -31,11 +31,12 @@ interface Phase {
 }
 
 const PHASES: Phase[] = [
-  { title: "Check-in", pill: "#FF4D00", pillDot: INK, face: "#FFB28F" },
-  { title: "Das Date", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF" },
-  { title: "Gefühle", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF" },
-  { title: "Wir beide", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D" },
-  { title: "Reconnect", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400" },
+  { title: "Ankommen", pill: "#FF4D00", pillDot: INK, face: "#FFB28F" },
+  { title: "Erzählen", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF" },
+  { title: "Fühlen", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF" },
+  { title: "Sicherheit", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400" },
+  { title: "Absprachen", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D" },
+  { title: "Nähe", pill: "#FF6BEF", pillDot: INK, face: "#FFC2F7" },
 ];
 
 /** Who answers a card: the person who had the date, the other one, or both. */
@@ -69,7 +70,7 @@ const NOTHING_YET = "Lieber erst mal nichts";
 // One question per card; every scale or chip row is followed by a text field.
 // Scales are answered by the listener only, so a card never shows two of them.
 const GAME_CARDS: GameCard[] = [
-  // 1. Check-in
+  // 1. Ankommen: wie es dir geht und wie viel du hören magst
   {
     id: "checkin-safe",
     phase: 0,
@@ -80,15 +81,15 @@ const GAME_CARDS: GameCard[] = [
     chips: ["Freude", "Neugier", "Aufregung", "Unsicherheit", "Eifersucht"],
     text: "Was noch da ist …",
   },
-  // 2. Das Date
   {
     id: "howmuch",
-    phase: 1,
+    phase: 0,
     who: "listener",
     question: "Wie viel möchtest du hören?",
     chips: ["Wie es dir ging", "Was ihr gemacht habt", "Wer die Person ist", "Ob ihr euch wiedersehen wollt", "Körperliches", NOTHING_YET],
     text: "Oder in deinen Worten …",
   },
+  // 2. Erzählen: vom Date, und was es gleich auslöst
   {
     id: "date-how",
     phase: 1,
@@ -98,10 +99,9 @@ const GAME_CARDS: GameCard[] = [
     text: "Was du erzählst, in Stichworten …",
     phrase: true,
   },
-  // 3. Gefühle
   {
     id: "feel-trigger",
-    phase: 2,
+    phase: 1,
     who: "listener",
     question: "Was löst das in dir aus?",
     scale: true,
@@ -116,6 +116,7 @@ const GAME_CARDS: GameCard[] = [
       ],
     },
   },
+  // 3. Fühlen: was dahinter steckt
   {
     id: "feel-fears",
     phase: 2,
@@ -125,14 +126,6 @@ const GAME_CARDS: GameCard[] = [
     text: "Ich habe Angst, dass …",
   },
   {
-    id: "feel-calm",
-    phase: 2,
-    who: "listener",
-    question: "Was gibt dir Sicherheit?",
-    chips: ["Eine Umarmung", "Hören, was ich dir bedeute", "Zeit nur für uns", "Ein Ritual nach Dates", "Mehr wissen", "Erst mal Ruhe"],
-    text: "Oder in deinen Worten …",
-  },
-  {
     id: "feel-joy",
     phase: 2,
     who: "listener",
@@ -140,14 +133,22 @@ const GAME_CARDS: GameCard[] = [
     chips: ["Ja, von Herzen", "Ein bisschen", "Gerade noch nicht"],
     text: "Was gerade im Weg steht …",
   },
-  // 4. Wir beide
   {
     id: "us-changed",
-    phase: 3,
+    phase: 2,
     who: "listener",
     question: "Hat sich etwas zwischen uns verändert?",
     chips: ["Nein, alles wie vorher", "Ein bisschen", "Ja, spürbar", "Weiß ich noch nicht"],
     text: "Was genau …",
+  },
+  // 4. Sicherheit: was trägt
+  {
+    id: "feel-calm",
+    phase: 3,
+    who: "listener",
+    question: "Was gibt dir Sicherheit?",
+    chips: ["Eine Umarmung", "Hören, was ich dir bedeute", "Zeit nur für uns", "Ein Ritual nach Dates", "Mehr wissen", "Erst mal Ruhe"],
+    text: "Oder in deinen Worten …",
   },
   {
     id: "us-loved",
@@ -159,44 +160,45 @@ const GAME_CARDS: GameCard[] = [
     text: "Was dir gefehlt hat oder gutgetan hat …",
   },
   {
-    id: "us-wish",
-    phase: 3,
-    who: "both",
-    question: "Was wünschst du dir künftig anders?",
-    text: "Ich wünsche mir …",
-  },
-  {
-    id: "us-rules",
-    phase: 3,
-    who: "both",
-    question: "Müssen wir unsere Regeln anpassen?",
-    rules: true,
-  },
-  {
     id: "us-special",
     phase: 3,
     who: "both",
     question: "Was macht uns besonders?",
     text: "Was nur wir haben …",
   },
-  // 5. Reconnect
+  // 5. Absprachen: was ihr euch wünscht und was gilt
+  {
+    id: "us-wish",
+    phase: 4,
+    who: "both",
+    question: "Was wünschst du dir künftig anders?",
+    text: "Ich wünsche mir …",
+  },
+  {
+    id: "us-rules",
+    phase: 4,
+    who: "both",
+    question: "Müssen wir unsere Regeln anpassen?",
+    rules: true,
+  },
+  // 6. Nähe: zurück zueinander
   {
     id: "rc-appreciate",
-    phase: 4,
+    phase: 5,
     who: "both",
     question: "Was schätzt du gerade an uns?",
     text: "An uns schätze ich …",
   },
   {
     id: "rc-unsaid",
-    phase: 4,
+    phase: 5,
     who: "both",
     question: "Was ist bisher zu kurz gekommen?",
     text: "Ich wollte dir noch sagen …",
   },
   {
     id: "rc-close",
-    phase: 4,
+    phase: 5,
     who: "both",
     question: "Wie kommen wir uns jetzt nah?",
     chips: ["Umarmen", "Kuscheln", "Zusammen einschlafen", "Reden", "Lachen"],
@@ -781,12 +783,12 @@ const AfterDateCards: React.FC = () => {
     );
   };
 
-  const renderRules = () => (
+  const renderRules = (accent: string) => (
     <div className="w-full flex flex-col gap-3">
       <ActionRow
         icon="IconPencil"
         label={rulesOpen ? "Regeln schließen" : `Unsere Regeln ansehen (${rules.length})`}
-        accent="#FFF3A8"
+        accent={accent}
         iconColor={INK}
         fieldBg={GREY_FIELD}
         onClick={() => {
@@ -794,14 +796,14 @@ const AfterDateCards: React.FC = () => {
           setRulesOpen((o) => !o);
         }}
       />
-      {rulesOpen && renderRuleNotes()}
+      {rulesOpen && renderRuleNotes(accent)}
     </div>
   );
 
-  const renderRuleNotes = () => (
+  const renderRuleNotes = (accent: string) => (
     <div className="w-full flex flex-col gap-2">
       {rules.map((rule, i) => (
-        <div key={i} className="relative w-full" style={{ background: "#FFF3A8" }}>
+        <div key={i} className="relative w-full" style={{ background: accent }}>
           <textarea
             value={rule}
             onChange={(e) => editRules((prev) => prev.map((r, j) => (j === i ? e.target.value : r)))}
@@ -949,7 +951,7 @@ const AfterDateCards: React.FC = () => {
           </p>
         )}
         {!card.rules && players.map((i) => renderPlayer(card, i))}
-        {card.rules && renderRules()}
+        {card.rules && renderRules(PHASES[card.phase].face)}
         {card.tip &&
           renderAdvice(
             `tip-${card.id}`,
