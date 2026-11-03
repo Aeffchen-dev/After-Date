@@ -134,6 +134,7 @@ const GAME_CARDS: GameCard[] = [
       "Ich bin neugierig",
       "Ich fühle mich unsicher",
       "Ich vergleiche mich",
+      "Ich hätte so etwas auch gerne",
       "Ich habe Angst vor Veränderung",
       "Ich muss es erst verarbeiten",
     ],
@@ -318,7 +319,7 @@ const GUIDANCE_DEBOUNCE_MS = 1800;
 // focus or press outline.
 // Answer fields fill the card's free height. Safari won't stretch a textarea as a flex item,
 // so a box takes the room (two lines at least) and the field fills the box.
-const fillBoxCls = "relative w-full flex-1 min-h-[64px]";
+const fillBoxCls = "relative w-full flex-1 min-h-[56px]";
 const fillFieldCls = "absolute inset-0 h-full py-2 resize-none";
 
 const fieldCls =
@@ -727,7 +728,7 @@ const AfterDateCards: React.FC = () => {
     const phase = PHASES[card.phase];
     const showName = card.who === "both";
     return (
-      <div key={i} className="w-full flex flex-1 flex-col gap-3">
+      <div key={i} className="w-full flex flex-1 flex-col gap-2">
         {showName && !card.text && nameTag(card, i)}
         {
           <>
@@ -980,7 +981,7 @@ const AfterDateCards: React.FC = () => {
     const card = CARD_BY_ID[slideId];
     const players = playersOf(card);
     return (
-      <div className="flex flex-1 flex-col items-start w-full gap-5">
+      <div className="flex flex-1 flex-col items-start w-full gap-4">
         {!(card.rules && rulesOpen) && (
           <h2 className="question-font retro-heading card-question w-full" lang="de">
             <RevealText text={card.question} color={INK} slideIndex={index} />
