@@ -91,6 +91,7 @@ const UNSETTLED_THOUGHTS = [
   "Ich habe Angst vor Veränderung",
 ];
 const CALM_WORRIES = "Eigentlich verunsichert mich nichts";
+const NO_FEAR = "Keine konkrete Befürchtung";
 // Check-in feelings that ask the teller to go gently.
 const TENDER_FEELINGS = ["Unsicher", "Eifersüchtig", "Ängstlich", "Überfordert", "Unwohl"];
 
@@ -167,7 +168,22 @@ const GAME_CARDS: GameCard[] = [
     text: "Eigene Gedanken …",
   },
   {
-    // Goes deeper only when something unsettled the listener on the two cards before.
+    id: "feel-imagine",
+    phase: 2,
+    who: "listener",
+    question: "Gibt es etwas, das du dir ausmalst oder befürchtest?",
+    chips: [
+      "Nicht mehr besonders zu sein",
+      "Dass du dich verliebst",
+      "Dass du mich vergleichst",
+      "Dass ich weniger Aufmerksamkeit bekomme",
+      "Dass Absprachen nicht halten",
+      NO_FEAR,
+    ],
+    text: "Eigene Gedanken …",
+  },
+  {
+    // Goes deeper only when something unsettled the listener on the cards before.
     id: "feel-deeper",
     phase: 2,
     who: "listener",
@@ -181,7 +197,9 @@ const GAME_CARDS: GameCard[] = [
         !!thoughts &&
         ((thoughts.mood !== null && thoughts.mood <= 2) || thoughts.chips.some((c) => UNSETTLED_THOUGHTS.includes(c)));
       const worried = !!worries && worries.chips.some((c) => c !== CALM_WORRIES);
-      return unsettled || worried;
+      const fears = listener("feel-imagine");
+      const afraid = !!fears && fears.chips.some((c) => c !== NO_FEAR);
+      return unsettled || worried || afraid;
     },
   },
   {

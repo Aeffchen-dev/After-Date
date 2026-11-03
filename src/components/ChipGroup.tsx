@@ -23,7 +23,7 @@ const ChipGroup: React.FC<ChipGroupProps> = ({ options, value, onChange, accent,
           type="button"
           aria-pressed={picked}
           onClick={() => onChange(picked ? value.filter((v) => v !== option) : [...value, option])}
-          className="retro-body-copy-sm h-9 rounded-full border-0 px-3 transition-colors"
+          className="retro-body-copy-sm min-h-9 rounded-[18px] border-0 px-3 py-1.5 text-left transition-colors"
           style={{ background: picked ? accent : "#FFFFFF", color: INK, boxShadow: `inset 0 0 0 1.5px ${picked ? accent : "#C9CBCE"}` }}
         >
           {option}
