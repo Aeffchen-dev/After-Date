@@ -63,8 +63,6 @@ interface GameCard {
   text?: string;
   /** Several text fields instead of one, each with its own prompt as placeholder */
   prompts?: string[];
-  /** Offers "Hilf mir, es zu sagen": the AI turns notes into words to say out loud */
-  phrase?: boolean;
   /** Shows what the listener picked on that card, so the teller knows what to cover */
   showWishesFrom?: string;
 }
@@ -107,7 +105,6 @@ const GAME_CARDS: GameCard[] = [
       "Gab es körperliche oder emotionale Nähe, über die wir sprechen sollten?",
       "Gibt es etwas Wichtiges, das du mir noch erzählen möchtest?",
     ],
-    phrase: true,
   },
   {
     id: "feel-trigger",
@@ -366,8 +363,6 @@ const AfterDateCards: React.FC = () => {
     }
   );
   const [guidance, setGuidance] = useState<Record<string, GuidanceState>>({});
-  // "Hilf mir, es zu sagen" results, keyed by card id; asked on tap only.
-  const [phrasing, setPhrasing] = useState<Record<string, GuidanceState>>({});
   const guidanceTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const guidanceAborts = useRef<Record<string, AbortController>>({});
 
@@ -502,8 +497,6 @@ const AfterDateCards: React.FC = () => {
   useEffect(() => {
     if (!guidanceEnabled()) return;
     GAME_CARDS.forEach((card) => {
-      // Notes on the "date-how" card are a draft for the teller, not yet said; it gets wording help instead.
-      if (card.phrase) return;
       const a = answers[card.id];
       const players = playersOf(card);
       if (!a || !players.every((i) => isAnswered(card, a[i]))) return;
@@ -544,29 +537,6 @@ const AfterDateCards: React.FC = () => {
       Object.values(aborts).forEach((c) => c.abort());
     };
   }, []);
-
-  const askPhrasing = (card: GameCard) => {
-    const i = people.dateIdx;
-    const own = answers[card.id]?.[i];
-    const notes = own ? answerText(card, own) : "";
-    const feelings = answers["checkin-safe"]?.[listenerIdx];
-    const context = [
-      feelings && feelings.chips.length ? `${nameOf(listenerIdx)} fühlt gerade: ${feelings.chips.join(", ")}.` : "",
-      wishesText("howmuch"),
-    ].filter(Boolean).join(" ");
-    const payload: GuidanceRequest = {
-      mode: "phrase",
-      cardTitle: PHASES[card.phase].title,
-      question: card.question,
-      answers: [{ name: nameOf(i), role: "date", text: notes }],
-      ...(context ? { context } : {}),
-    };
-    const key = JSON.stringify(payload);
-    setPhrasing((prev) => ({ ...prev, [card.id]: { status: "loading", key } }));
-    fetchGuidance(payload)
-      .then((data) => setPhrasing((prev) => ({ ...prev, [card.id]: { status: "done", key, data } })))
-      .catch(() => setPhrasing((prev) => ({ ...prev, [card.id]: { status: "error", key } })));
-  };
 
   const updateAnswer = (cardId: string, person: 0 | 1, change: Partial<PersonAnswer>) => {
     setAnswers((prev) => {
@@ -681,41 +651,6 @@ const AfterDateCards: React.FC = () => {
               <p className="retro-body-copy">{g.data.guidance}</p>
               {g.data.followUpQuestion && <p className="retro-body-copy">{g.data.followUpQuestion}</p>}
             </>
-        )}
-      </div>
-    );
-  };
-
-  const renderPhrasing = (card: GameCard) => {
-    const p = phrasing[card.id];
-    const own = answers[card.id]?.[people.dateIdx];
-    const notes = own ? answerText(card, own) : "";
-    return (
-      <div className="w-full flex flex-col gap-3">
-        <ActionRow
-          icon="IconPencil"
-          label={p?.status === "done" ? "Nochmal anders sagen" : "Hilf mir, es zu sagen"}
-          accent={PHASES[card.phase].pill}
-          iconColor={inkOn(PHASES[card.phase].pill)}
-          fieldBg={GREY_FIELD}
-          onClick={() => askPhrasing(card)}
-        />
-        {p && (
-          <div className="w-full flex flex-col gap-3 p-4" style={{ background: "#F6F1E8" }} aria-live="polite">
-            <span className="retro-body-copy-sm opacity-70">
-              {notes ? "So könntest du es sagen" : "Ein möglicher Anfang"}
-            </span>
-            {p.status === "loading" && <p className="retro-body-copy">Einen Moment …</p>}
-            {p.status === "error" && <p className="retro-body-copy">Das hat gerade nicht geklappt. Deine eigenen Worte reichen.</p>}
-            {p.status === "done" && (
-              <>
-                <p className="retro-body-copy">„{p.data.guidance}“</p>
-                {p.data.followUpQuestion && (
-                  <p className="retro-body-copy-sm">Danach kannst du fragen: {p.data.followUpQuestion}</p>
-                )}
-              </>
-            )}
-          </div>
         )}
       </div>
     );
@@ -975,7 +910,6 @@ const AfterDateCards: React.FC = () => {
         )}
         {!card.rules && players.map((i) => renderPlayer(card, i))}
         {card.rules && renderRules(PHASES[card.phase].pill)}
-        {card.phrase && renderPhrasing(card)}
         {renderGuidance(card)}
       </div>
     );
