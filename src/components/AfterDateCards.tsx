@@ -31,13 +31,15 @@ interface Phase {
   face: string;
   /** Page background: the round's colour at shade 950 */
   page: string;
+  /** Name tags on cards for both, when the pill's dot colour doesn't suit them */
+  tag?: string;
 }
 
 const PHASES: Phase[] = [
   { title: "Ankommen", pill: "#FF4D00", pillDot: INK, face: "#FFB28F", page: "#431407" },
   { title: "Erzählen", pill: "#B026FF", pillDot: "#5343A8", face: "#DDB0FF", page: "#3B0764" },
   { title: "Fühlen", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF", page: "#082F49" },
-  { title: "Sicherheit", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400", page: "#422006" },
+  { title: "Sicherheit", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400", tag: "#FFD400", page: "#422006" },
   { title: "Absprachen", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D", page: "#052E16" },
   { title: "Nähe", pill: PINK, pillDot: INK, face: "#FFC2F7", page: "#4A044E" },
 ];
@@ -698,7 +700,7 @@ const AfterDateCards: React.FC = () => {
 
   /** Whose field it is on cards for both: the setup slide's label tag, in the colour of the round pill's dot. */
   const nameTag = (card: GameCard, i: 0 | 1, htmlFor?: string) => {
-    const bg = PHASES[card.phase].pillDot;
+    const bg = PHASES[card.phase].tag ?? PHASES[card.phase].pillDot;
     const Tag = htmlFor ? "label" : "span";
     return (
       <Tag
