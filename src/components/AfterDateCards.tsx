@@ -80,7 +80,7 @@ const GAME_CARDS: GameCard[] = [
     question: "Wie sicher fühlst du dich gerade?",
     scale: true,
     scaleLabels: ["Unsicher", "Eher unsicher", "Gemischt", "Eher sicher", "Sicher & verbunden"],
-    chips: ["Freude", "Neugier", "Aufregung", "Unsicherheit", "Eifersucht"],
+    chips: ["Neugierig", "Gespannt", "Entspannt", "Unsicher", "Eifersüchtig", "Ängstlich", "Aufgeregt", "Überfordert", "Unwohl"],
     text: "Was noch da ist …",
   },
   {
