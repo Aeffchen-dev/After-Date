@@ -239,7 +239,7 @@ const RULES_DIRTY_KEY = "after-date-rules-unsent";
 // Edits are sent to the Worker once typing pauses; it shares its rate limit with guidance.
 const RULES_SAVE_DEBOUNCE_MS = 2000;
 
-const HOLD_QUESTION = "Can we just hold each other for a moment?";
+const HOLD_QUESTION = "Können wir uns einen Moment einfach halten?";
 
 // Slide order: title, names, then the game cards.
 const SLIDE_TITLE = "title";
@@ -1043,10 +1043,10 @@ const AfterDateCards: React.FC = () => {
             className="fixed inset-0 z-50 flex flex-col items-center px-6 pt-[88px] pb-[96px] animate-[fadeInUp_0.4s_ease-out_both]"
             style={{ backgroundColor: PINK, color: INK }}
           >
-            {/* The hold card sits where the deck's card sits, on a pink page. */}
-            <div className="w-full max-w-[500px] flex-1 max-h-[660px] flex flex-col items-center justify-center gap-8 p-[28px]" style={{ backgroundColor: "#FFFFFF" }}>
+            {/* The hold card sits where the deck's card sits; card and page are one pink. */}
+            <div className="w-full max-w-[500px] flex-1 max-h-[660px] flex flex-col items-center justify-center gap-8 p-[28px]" style={{ backgroundColor: PINK }}>
               <HugIllustration />
-              <h2 className="question-font retro-heading w-full text-center" lang="en">
+              <h2 className="question-font retro-heading w-full text-center" lang="de">
                 <RevealText text={HOLD_QUESTION} color={INK} startDelay={120} />
               </h2>
             </div>

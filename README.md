@@ -2,7 +2,7 @@
 
 Let's make honesty feel safe.
 
-A question game for open relationships: it helps the person who had a date tell about it, and the other one stay with it, even when jealousy or insecurity come up. Thirteen cards in five rounds (Ankommen, Sag es, Erzähl mir, Das Schwierige, Wir), each showing whose turn it is, plus one card you can draw at any time: *"Can we just hold each other for a moment?"*
+A question game for open relationships: it helps the person who had a date tell about it, and the other one stay with it, even when jealousy or insecurity come up. Fifteen cards in six rounds (Ankommen, Erzählen, Fühlen, Sicherheit, Absprachen, Nähe), plus one card you can draw at any time: *„Können wir uns einen Moment einfach halten?“*
 
 Live: https://aeffchen-dev.github.io/After-Date/
 
