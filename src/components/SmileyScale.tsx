@@ -49,7 +49,7 @@ const SmileyScale: React.FC<SmileyScaleProps> = ({ value, onChange, labels = MOO
   const leftPct = value === null ? 0 : ((value - 1) / 4) * 100;
 
   return (
-    <div className="swiper-no-swiping w-full" role="radiogroup" aria-label={label} onKeyDown={onKeyDown}>
+    <div className="w-full" role="radiogroup" aria-label={label} onKeyDown={onKeyDown}>
       <div className="flex w-full justify-between gap-1">
         {labels.map((moodLabel, i) => {
           const level = i + 1;

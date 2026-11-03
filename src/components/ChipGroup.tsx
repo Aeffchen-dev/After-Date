@@ -14,7 +14,7 @@ interface ChipGroupProps {
 
 /** Tappable answer chips; any number can be picked. */
 const ChipGroup: React.FC<ChipGroupProps> = ({ options, value, onChange, accent, label }) => (
-  <div className="swiper-no-swiping flex w-full flex-wrap gap-2" role="group" aria-label={label}>
+  <div className="flex w-full flex-wrap gap-2" role="group" aria-label={label}>
     {options.map((option) => {
       const picked = value.includes(option);
       return (

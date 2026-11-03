@@ -41,7 +41,7 @@ const PHASES: Phase[] = [
   { title: "Fühlen", pill: "#00A9FF", pillDot: "#C6D0E0", face: "#9FDCFF", page: "#082F49" },
   { title: "Sicherheit", pill: "#FFD400", pillDot: "#6C2D01", face: "#FFD400", tag: "#FFD400", page: "#422006" },
   { title: "Absprachen", pill: "#0B7A35", pillDot: "#B6FF4D", face: "#B6FF4D", page: "#052E16" },
-  { title: "Nähe", pill: PINK, pillDot: INK, face: "#FFC2F7", page: "#4A044E" },
+  { title: "Nähe", pill: PINK, pillDot: INK, face: "#FFC2F7", tag: PINK, page: "#4A044E" },
 ];
 
 /** Who answers a card: the person who had the date, the other one, or both. */
@@ -284,8 +284,10 @@ const EMPTY_ANSWERS: CardAnswers = [EMPTY_PERSON, EMPTY_PERSON];
 // Guidance asks once a card is answered, after typing pauses.
 const GUIDANCE_DEBOUNCE_MS = 1800;
 
+// Fields take part in swiping (the deck pages over them; a tap still focuses them) and show no
+// focus or press outline.
 const fieldCls =
-  "swiper-no-swiping retro-input retro-input-dark-text w-full rounded-none border-0 px-3 focus:outline-none focus:ring-2 focus:ring-black/20";
+  "retro-input retro-input-dark-text w-full rounded-none border-0 px-3 outline-none ring-0 focus:outline-none focus:ring-0 active:outline-none [-webkit-tap-highlight-color:transparent]";
 
 /** A person has answered a card when they passed, or filled what the card asks for. */
 const isAnswered = (card: GameCard, a: PersonAnswer) => {
