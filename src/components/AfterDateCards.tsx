@@ -11,6 +11,7 @@ import { Keyboard } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
 import { saveToStorage, loadFromStorage, clearExpiredStorage, STORAGE_KEYS } from "@/lib/storage";
 import { fetchRules, saveRules } from "@/lib/rules";
+import { inkOn } from "@/lib/contrast";
 import { fetchGuidance, guidanceEnabled, type Guidance, type GuidanceAnswer, type GuidanceRequest } from "@/lib/guidance";
 
 import "swiper/css";
@@ -413,16 +414,6 @@ const SLIDE_INTRO = "intro";
 const ALL_SLIDES: string[] = [SLIDE_TITLE, SLIDE_INTRO, ...GAME_CARDS.map((c) => c.id)];
 const CARD_BY_ID = Object.fromEntries(GAME_CARDS.map((c) => [c.id, c])) as Record<string, GameCard>;
 
-
-/** Ink or white, whichever reads better on a #RRGGBB fill. */
-const inkOn = (hex: string) => {
-  const [r, g, b] = [1, 3, 5].map((i) => {
-    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
-    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-  });
-  const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return 1.05 / (l + 0.05) > (l + 0.05) / 0.0176 ? "#FFFFFF" : INK;
-};
 
 /** The two people playing; `dateIdx` marks who had the date. */
 interface People {
@@ -885,7 +876,7 @@ const AfterDateCards: React.FC = () => {
                 icons={card.chipIcons}
                 value={a.chips}
                 onChange={(v) => updateAnswer(card.id, i, { chips: v })}
-                accent={phase.face}
+                accent={phase.pill}
                 label={`Antworten von ${nameOf(i)}`}
               />
             )}

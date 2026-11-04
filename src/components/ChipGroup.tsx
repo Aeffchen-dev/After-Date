@@ -1,12 +1,11 @@
 import React from "react";
-
-const INK = "#201C1D";
+import { INK, inkOn } from "@/lib/contrast";
 
 interface ChipGroupProps {
   options: string[];
   value: string[];
   onChange: (value: string[]) => void;
-  /** Fill of a picked chip */
+  /** Fill of a picked chip; its text turns ink or white, whichever reads better */
   accent: string;
   /** Accessible name of the group */
   label: string;
@@ -26,7 +25,7 @@ const ChipGroup: React.FC<ChipGroupProps> = ({ options, value, onChange, accent,
           aria-pressed={picked}
           onClick={() => onChange(picked ? value.filter((v) => v !== option) : [...value, option])}
           className="retro-body-copy-sm min-h-9 rounded-[18px] border-0 px-3 py-1.5 text-left transition-colors"
-          style={{ background: picked ? accent : "#FFFFFF", color: INK, boxShadow: `inset 0 0 0 1.5px ${picked ? accent : "#C9CBCE"}` }}
+          style={{ background: picked ? accent : "#FFFFFF", color: picked ? inkOn(accent) : INK, boxShadow: `inset 0 0 0 1.5px ${picked ? accent : "#C9CBCE"}` }}
         >
           {icons?.[option] && (
             <span aria-hidden="true" className="mr-1.5">
