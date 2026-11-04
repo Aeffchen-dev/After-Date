@@ -60,6 +60,8 @@ interface GameCard {
   scaleLabels?: string[];
   /** An emoji per chip that shows the feeling */
   chipIcons?: Record<string, string>;
+  /** The listener's topic picks that hide `chipTopics` chips, without showing the wishes box */
+  topicsFrom?: string;
   /** Chips tied to topics the listener may not want to hear (see `prompts`); hidden then */
   chipTopics?: Record<string, string[]>;
   /** Shown only when this returns true for the listener's earlier answers; skipped otherwise */
@@ -166,7 +168,8 @@ const GAME_CARDS: GameCard[] = [
     phase: 1,
     who: "date",
     question: "Was hat dir an der Begegnung gefallen oder gutgetan?",
-    showWishesFrom: "howmuch",
+    // No tell / leave-out box here, but chips the listener didn't ask about still hide.
+    topicsFrom: "howmuch",
     chips: [
       "Die Aufmerksamkeit",
       "Die sexuelle Anziehung",
@@ -657,8 +660,9 @@ const AfterDateCards: React.FC = () => {
 
   /** Content tied to topics shows unless the listener picked topics and none of these. */
   const topicsWanted = (card: GameCard, topics?: string[]) => {
-    if (!topics || !card.showWishesFrom) return true;
-    const picked = wishedTopics(card.showWishesFrom);
+    const from = card.topicsFrom ?? card.showWishesFrom;
+    if (!topics || !from) return true;
+    const picked = wishedTopics(from);
     return !picked || topics.some((t) => picked.includes(t));
   };
   const promptVisible = (card: GameCard, prompt: Prompt) => topicsWanted(card, prompt.topics);
